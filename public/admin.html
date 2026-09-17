@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/style.css?v=20260917b">
 </head>
 <body>
 <header class="topbar">
@@ -14,7 +14,7 @@
   </div>
   <div class="user-info">
     <span id="user-name"></span>
-    <button onclick="location.href='/staff.html'">店員作業</button>
+    <!-- 店員作業頁之後再開放（Steve 2026-09-17）：<button onclick="location.href='/staff.html'">店員作業</button> -->
     <button id="btn-pw">改密碼</button>
     <button id="btn-logout">登出</button>
   </div>
@@ -23,7 +23,7 @@
 <div class="container wide">
   <div class="msg" id="msg"></div>
 
-  <div class="tabs">
+  <div class="tabs seg">
     <button data-tab="members" class="active">會員管理</button>
     <button data-tab="settings">規則設定</button>
     <button data-tab="reports">統計報表</button>
@@ -32,70 +32,65 @@
 
   <!-- 會員管理 -->
   <div class="tab-panel active" id="panel-members">
-    <div class="card">
-      <div class="row search-row">
-        <input type="text" id="mm-q" placeholder="搜尋手機／Email／姓名" style="flex:3">
-        <button class="btn small" id="mm-search" style="flex:1">搜尋</button>
-        <button class="btn small" id="mm-open-new" style="flex:1">＋新增客戶</button>
+    <!-- 列表 -->
+    <div id="mm-list-view">
+      <div class="toolbar">
+        <form class="search-box" id="mm-search-form" role="search" onsubmit="return false">
+          <input type="search" id="mm-q" placeholder="搜尋姓名或手機" enterkeyhint="search" autocomplete="off">
+          <button type="submit" class="btn small" id="mm-search">搜尋</button>
+        </form>
+        <button class="btn" id="mm-open-new">＋ 新增客戶</button>
       </div>
-      <div class="table-wrap">
-        <table class="stack">
-          <thead><tr><th>姓名</th><th>最近來訪</th><th>來訪次數</th><th>帳號</th><th></th></tr></thead>
-          <tbody id="mm-body"></tbody>
-        </table>
-      </div>
-      <div class="row pager" style="margin-top:12px">
+      <div class="member-list" id="mm-body"></div>
+      <div class="pager">
         <button class="btn small secondary" id="mm-prev">上一頁</button>
-        <span id="mm-page" style="text-align:center;line-height:2">第 1 頁</span>
+        <span id="mm-page">第 1 頁</span>
         <button class="btn small secondary" id="mm-next">下一頁</button>
       </div>
     </div>
 
-    <!-- 會員詳情 + 補扣點 -->
-    <div class="card" id="mm-detail" style="display:none">
-      <div class="detail-head">
-        <button class="btn small secondary" id="md-back">← 返回列表</button>
-        <h2 id="md-title" style="margin:0"></h2>
-      </div>
-      <p>目前餘額：<strong id="md-balance" style="color:var(--primary);font-size:1.3rem"></strong> 點</p>
-      <div class="visit-summary" id="md-visits"></div>
-      <div class="row form-row" style="margin-top:12px">
-        <div>
-          <label>調整點數（正=補點，負=扣點）</label>
-          <input type="number" id="md-points">
+    <!-- 會員詳情（手機上整頁換過來，不疊在列表下面） -->
+    <div id="mm-detail" style="display:none">
+      <button class="back-link" id="md-back">‹ 會員列表</button>
+
+      <div class="card profile">
+        <div class="p-name" id="md-title"></div>
+        <div class="p-phone" id="md-phone"></div>
+        <div class="p-stats">
+          <div class="p-stat"><div class="v" id="md-balance">0</div><div class="k">目前點數</div></div>
+          <div class="p-stat"><div class="v" id="md-count">0</div><div class="k">來訪次數</div></div>
         </div>
-        <div>
-          <label>備註</label>
-          <input type="text" id="md-note" placeholder="例：活動補點">
-        </div>
-        <div>
-          <label>上課時間（補點才用，預設現在）</label>
-          <input type="datetime-local" id="md-date">
-        </div>
-      </div>
-      <button class="btn" id="md-adjust">確認調整</button>
-      <h3 style="margin:18px 0 6px">點數與來訪紀錄</h3>
-      <div class="table-wrap">
-        <table class="stack">
-          <thead><tr><th>時間</th><th>類型</th><th>金額</th><th>點數</th><th>經手人</th><th>備註</th></tr></thead>
-          <tbody id="md-tx"></tbody>
-        </table>
+        <div class="p-last" id="md-visits"></div>
       </div>
 
-      <hr style="margin:20px 0;border:none;border-top:1px solid var(--border)">
-      <h3 style="margin-bottom:8px">設定登入帳密</h3>
-      <p style="font-size:.85rem;color:var(--muted);margin-bottom:10px" id="md-login-hint"></p>
-      <div class="row form-row">
-        <div>
-          <label>帳號（手機號碼或 Email）</label>
-          <input type="text" id="md-login-account">
-        </div>
-        <div>
-          <label>密碼（至少 6 個字元）</label>
-          <input type="password" id="md-login-password">
-        </div>
+      <div class="card">
+        <h2>幫客戶加點</h2>
+        <label for="md-points">點數</label>
+        <input type="number" id="md-points" inputmode="numeric" placeholder="例：10">
+        <p class="field-hint">打錯要扣回，填負數即可（例如 -10）</p>
+        <label for="md-date">消費日期時間</label>
+        <input type="datetime-local" id="md-date">
+        <p class="field-hint">預設是現在；補登以前的消費就改這裡</p>
+        <label for="md-note">備註（選填）</label>
+        <input type="text" id="md-note" placeholder="例：感統課一堂">
+        <button class="btn" id="md-adjust">確認加點</button>
       </div>
-      <button class="btn small" id="md-login-save">儲存登入帳密</button>
+
+      <div class="card">
+        <h2>消費與點數紀錄</h2>
+        <ul class="tx-list" id="md-tx"></ul>
+      </div>
+
+      <!-- 會員自己登入之後再做（Steve 2026-09-17），先藏起來，程式保留 -->
+      <div class="card" id="md-login-section" style="display:none">
+        <h2>設定登入帳密</h2>
+        <p class="field-hint" id="md-login-hint"></p>
+        <label>帳號（手機號碼或 Email）</label>
+        <input type="text" id="md-login-account">
+        <label>密碼（至少 6 個字元）</label>
+        <input type="password" id="md-login-password">
+        <button class="btn small" id="md-login-save">儲存登入帳密</button>
+      </div>
     </div>
   </div>
 
@@ -103,11 +98,11 @@
   <div class="tab-panel" id="panel-settings">
     <div class="card">
       <h2>點數規則</h2>
-      <div class="row">
+      <div class="row form-row">
         <div><label>每消費金額（元）</label><input type="number" id="s-rate-amount" min="1"></div>
         <div><label>可得點數</label><input type="number" id="s-rate-points" min="1"></div>
       </div>
-      <div class="row">
+      <div class="row form-row">
         <div><label>點數有效期（月）</label><input type="number" id="s-validity" min="1"></div>
         <div><label>1 點折抵金額（元）</label><input type="number" id="s-redeem-value" min="1"></div>
       </div>
@@ -121,12 +116,12 @@
   <div class="tab-panel" id="panel-reports">
     <div class="stat-row" id="r-stats"></div>
     <div class="card">
-      <div class="row" style="margin-bottom:12px">
+      <div class="seg-btns">
         <button class="btn small" id="r-daily">每日（近 30 天）</button>
         <button class="btn small secondary" id="r-monthly">每月（近 12 月）</button>
       </div>
       <div class="table-wrap">
-        <table class="stack">
+        <table class="stack grid2">
           <thead><tr><th>期間</th><th>消費金額</th><th>發出點數</th><th>兌換點數</th><th>活躍會員</th><th>交易筆數</th></tr></thead>
           <tbody id="r-body"></tbody>
         </table>
@@ -151,7 +146,7 @@
   </div>
 
   <!-- 改密碼 Modal -->
-  <div id="pw-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
+  <div id="pw-modal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
     <div class="modal-box" style="background:var(--card);border-radius:12px;padding:24px;width:90%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
       <h3 style="margin-bottom:16px;color:var(--primary)">修改密碼</h3>
       <label>舊密碼<input type="password" id="pw-old" style="display:block;width:100%;margin-top:4px"></label>
@@ -164,13 +159,13 @@
   </div>
 
   <!-- 新增客戶 Modal -->
-  <div id="nc-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
+  <div id="nc-modal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
     <div class="modal-box" style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
       <h3 style="margin-bottom:16px;color:var(--primary)">新增客戶</h3>
       <label style="display:block;margin-bottom:8px">姓名<input type="text" id="nc-name" class="input" style="display:block;width:100%;margin-top:4px"></label>
-      <label style="display:block;margin-bottom:8px">手機（選填）<input type="text" id="nc-phone" class="input" style="display:block;width:100%;margin-top:4px"></label>
-      <label style="display:block;margin-bottom:8px">初始點數（選填）<input type="number" id="nc-points" class="input" min="0" style="display:block;width:100%;margin-top:4px"></label>
-      <label style="display:block;margin-bottom:16px">上課時間（有初始點數才用，預設現在）<input type="datetime-local" id="nc-date" class="input" style="display:block;width:100%;margin-top:4px"></label>
+      <label style="display:block;margin-bottom:8px">手機（選填）<input type="tel" inputmode="tel" id="nc-phone" class="input" style="display:block;width:100%;margin-top:4px"></label>
+      <label style="display:block;margin-bottom:8px">初始點數（選填）<input type="number" inputmode="numeric" id="nc-points" class="input" min="0" style="display:block;width:100%;margin-top:4px"></label>
+      <label style="display:block;margin-bottom:16px">消費日期時間（有初始點數才用，預設現在）<input type="datetime-local" id="nc-date" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <div style="display:flex;gap:8px">
         <button class="btn" id="nc-create" style="flex:1">建立客戶</button>
         <button class="btn secondary" id="nc-cancel" style="flex:1">取消</button>
@@ -179,7 +174,7 @@
   </div>
 
   <!-- 新增帳號 Modal -->
-  <div id="st-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
+  <div id="st-modal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
     <div class="modal-box" style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
       <h3 style="margin-bottom:16px;color:var(--primary)">新增店員／老闆帳號</h3>
       <label style="display:block;margin-bottom:8px">帳號<input type="text" id="st-account" class="input" style="display:block;width:100%;margin-top:4px"></label>
@@ -200,7 +195,7 @@
   </div>
 </div>
 
-<script src="/js/api.js"></script>
+<script src="/js/api.js?v=20260917b"></script>
 <script>
 if (!API.guard(['boss', 'admin'])) throw new Error('redirect');
 const msg = document.getElementById('msg');
@@ -250,18 +245,16 @@ async function loadMembers() {
   try {
     const data = await API.get(`/members?q=${encodeURIComponent(q)}&page=${mmPage}`);
     document.getElementById('mm-body').innerHTML = data.members.map(m => `
-      <tr>
-        <td class="cell-title">${esc(m.name)}</td>
-        <td data-label="最近來訪">${m.last_visit ? fmtVisit(m.last_visit) : '尚未來訪'}</td>
-        <td data-label="來訪次數">${m.visit_count || 0} 次</td>
-        <td data-label="帳號">${esc(m.account || '免登入')}</td>
-        <td class="cell-actions">
-          <button class="btn small" data-id="${m.id}">詳情</button>
-          <button class="btn small danger" data-del-id="${m.id}" data-del-name="${esc(m.name)}">刪除</button>
-        </td>
-      </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">沒有會員</td></tr>';
-    document.getElementById('mm-body').querySelectorAll('button[data-id]').forEach(b => {
-      b.onclick = () => openDetail(parseInt(b.dataset.id));
+      <div class="m-item" data-id="${m.id}" role="button" tabindex="0">
+        <div class="m-info">
+          <div class="m-name">${esc(m.name)}</div>
+          <div class="m-meta">${m.last_visit ? '最近來訪 <span class="nowrap">' + fmtVisit(m.last_visit) + '</span>' : '尚未來訪'}${m.phone ? '<br>' + esc(m.phone) : ''}</div>
+        </div>
+        <div class="m-count"><b>${m.visit_count || 0}</b><span>次</span></div>
+        <button class="m-del" data-del-id="${m.id}" data-del-name="${esc(m.name)}" aria-label="刪除">刪除</button>
+      </div>`).join('') || '<p class="empty">沒有會員，按上面「＋ 新增客戶」建立第一位</p>';
+    document.getElementById('mm-body').querySelectorAll('.m-item').forEach(el => {
+      el.onclick = e => { if (!e.target.closest('.m-del')) openDetail(parseInt(el.dataset.id)); };
     });
     document.getElementById('mm-body').querySelectorAll('button[data-del-id]').forEach(b => {
       b.onclick = () => deleteMember(parseInt(b.dataset.delId), b.dataset.delName);
@@ -271,12 +264,17 @@ async function loadMembers() {
     document.getElementById('mm-prev').disabled = mmPage <= 1;
   } catch (e) { showMsg(msg, e.message); }
 }
-document.getElementById('md-back').onclick = () => {
+function showList() {
   document.getElementById('mm-detail').style.display = 'none';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('mm-list-view').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+document.getElementById('md-back').onclick = () => { showList(); loadMembers(); };
+document.getElementById('mm-search-form').onsubmit = e => {
+  e.preventDefault();
+  document.getElementById('mm-q').blur();
+  mmPage = 1; loadMembers();
 };
-document.getElementById('mm-search').onclick = () => { mmPage = 1; loadMembers(); };
-document.getElementById('mm-q').addEventListener('keydown', e => { if (e.key === 'Enter') { mmPage = 1; loadMembers(); } });
 document.getElementById('mm-prev').onclick = () => { if (mmPage > 1) { mmPage--; loadMembers(); } };
 document.getElementById('mm-next').onclick = () => { mmPage++; loadMembers(); };
 
@@ -310,43 +308,51 @@ async function openDetail(id) {
   try {
     const data = await API.get('/members/' + id);
     mmDetailId = id;
-    document.getElementById('md-title').textContent = `${data.member.name}（${data.member.account || '免登入'}）`;
+    document.getElementById('md-title').textContent = data.member.name;
+    document.getElementById('md-phone').textContent = data.member.phone || '';
     document.getElementById('md-balance').textContent = data.balance;
     const visits = data.transactions.filter(t => t.points > 0);
-    document.getElementById('md-visits').innerHTML = visits.length
-      ? `最近來訪：<strong>${fmtVisit(visits[0].created_at)}</strong><br>共來訪 <strong>${visits.length}</strong> 次${data.transactions.length >= 200 ? '（只算最近 200 筆紀錄）' : ''}`
-      : '還沒有加點（來訪）紀錄';
-    document.getElementById('md-tx').innerHTML = data.transactions.map(t => `
-      <tr>
-        <td class="cell-title">${fmtVisit(t.created_at)}</td>
-        <td data-label="類型">${txTypeName(t.type)}</td>
-        <td data-label="金額">${t.type === 'earn' ? '$' + t.amount : '—'}</td>
-        <td data-label="點數" class="${t.points > 0 ? 'pts-pos' : 'pts-neg'}">${t.points > 0 ? '+' : ''}${t.points}</td>
-        <td data-label="經手人">${esc(t.operator_name || '—')}</td>
-        <td data-label="備註">${esc(t.note || '')}</td>
-      </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">尚無紀錄</td></tr>';
+    document.getElementById('md-count').textContent = visits.length;
+    document.getElementById('md-visits').textContent = visits.length
+      ? `最近來訪：${fmtVisit(visits[0].created_at)}${data.transactions.length >= 200 ? '（只算最近 200 筆）' : ''}`
+      : '還沒有來訪紀錄';
+    document.getElementById('md-tx').innerHTML = data.transactions.map(t => {
+      const kind = t.type === 'earn' ? `消費 $${t.amount}` : t.type === 'redeem' ? '兌換扣點' : (t.points > 0 ? '加點' : '扣點');
+      const sub = [kind, t.operator_name, t.note].filter(Boolean).map(esc).join('・');
+      return `
+      <li>
+        <div class="tx-l">
+          <div class="tx-when">${fmtVisit(t.created_at)}</div>
+          <div class="tx-sub">${sub}</div>
+        </div>
+        <div class="tx-pts ${t.points > 0 ? 'pts-pos' : 'pts-neg'}">${t.points > 0 ? '+' : ''}${t.points}</div>
+      </li>`;
+    }).join('') || '<li class="empty">還沒有紀錄</li>';
     document.getElementById('md-date').value = nowTaipeiInput();
+    document.getElementById('md-points').value = '';
+    document.getElementById('md-note').value = '';
     document.getElementById('md-login-hint').textContent = data.member.account
       ? `目前登入帳號：${data.member.account}（下面可以重設密碼，或改成新帳號）`
       : '目前免登入（客戶不能自己看餘額），下面可以幫他開通登入';
     document.getElementById('md-login-account').value = data.member.account || '';
     document.getElementById('md-login-password').value = '';
+    document.getElementById('mm-list-view').style.display = 'none';
     document.getElementById('mm-detail').style.display = 'block';
-    document.getElementById('mm-detail').scrollIntoView({ behavior: 'smooth' });
+    window.scrollTo(0, 0);
   } catch (e) { showMsg(msg, e.message); }
 }
 
 document.getElementById('md-adjust').onclick = async () => {
   const points = parseInt(document.getElementById('md-points').value);
   if (!points) return showMsg(msg, '請輸入非零點數');
-  if (!confirm(`確定${points > 0 ? '補' : '扣'} ${Math.abs(points)} 點？`)) return;
+  if (!confirm(`確定幫「${document.getElementById('md-title').textContent}」${points > 0 ? '加' : '扣'} ${Math.abs(points)} 點？`)) return;
   try {
     const data = await API.post('/points/adjust', {
       user_id: mmDetailId, points,
       note: document.getElementById('md-note').value,
       date: document.getElementById('md-date').value,
     });
-    showMsg(msg, `調整完成，餘額 ${data.balance} 點`, true);
+    showMsg(msg, `${points > 0 ? '已加' : '已扣'} ${Math.abs(points)} 點，目前 ${data.balance} 點`, true);
     document.getElementById('md-points').value = '';
     openDetail(mmDetailId);
   } catch (e) { showMsg(msg, e.message); }
@@ -370,7 +376,7 @@ async function deleteMember(id, name) {
   try {
     await API.call('/members/' + id, { method: 'DELETE', body: JSON.stringify({ password }) });
     showMsg(msg, '客戶已刪除', true);
-    if (mmDetailId === id) document.getElementById('mm-detail').style.display = 'none';
+    if (mmDetailId === id) showList();
     loadMembers();
   } catch (e) { showMsg(msg, e.message); }
 }
@@ -392,7 +398,7 @@ function updateSettingsPreview() {
   const v = document.getElementById('s-validity').value;
   const r = document.getElementById('s-redeem-value').value;
   document.getElementById('s-preview').innerHTML =
-    `目前規則：每消費 <strong>${a}</strong> 元得 <strong>${p}</strong> 點，效期 <strong>${v}</strong> 個月，1 點折 NT$<strong>${r}</strong>`;
+    `目前規則：<span class="nowrap">每消費 <strong>${a}</strong> 元</span><span class="nowrap">得 <strong>${p}</strong> 點</span>，<span class="nowrap">效期 <strong>${v}</strong> 個月</span>，<span class="nowrap">1 點折 NT$<strong>${r}</strong></span>`;
 }
 ['s-rate-amount', 's-rate-points', 's-validity', 's-redeem-value'].forEach(id => {
   document.getElementById(id).addEventListener('input', updateSettingsPreview);
