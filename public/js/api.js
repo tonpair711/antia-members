@@ -13,7 +13,7 @@ const API = {
       this.logout(); // token 過期
       return data;
     }
-    if (!res.ok) throw new Error(data.error || '發生錯誤');
+    if (!res.ok) throw Object.assign(new Error(data.error || '發生錯誤'), { code: data.code });
     return data;
   },
 

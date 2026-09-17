@@ -4,16 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=20260917b">
+<link rel="stylesheet" href="/css/style.css?v=20260917c">
 </head>
 <body>
 <header class="topbar">
   <div class="brand">
+    <button class="nav-btn" id="nav-back" aria-label="返回上一頁">‹ 返回</button>
     <img src="/images/logo.jpg" alt="">
     <h1>管理後台<small>喜翻親子感統遊戲空間</small></h1>
   </div>
   <div class="user-info">
     <span id="user-name"></span>
+    <button class="nav-btn" id="nav-reload" aria-label="重新整理">↻ 重新整理</button>
     <!-- 店員作業頁之後再開放（Steve 2026-09-17）：<button onclick="location.href='/staff.html'">店員作業</button> -->
     <button id="btn-pw">改密碼</button>
     <button id="btn-logout">登出</button>
@@ -41,7 +43,13 @@
         </form>
         <button class="btn" id="mm-open-new">＋ 新增客戶</button>
       </div>
-      <div class="member-list" id="mm-body"></div>
+      <div class="xl-wrap">
+        <table class="xl">
+          <thead><tr><th class="sticky">姓名</th><th class="num">點數</th><th class="num">來訪</th><th>最近來訪</th><th>手機</th><th></th></tr></thead>
+          <tbody id="mm-body"></tbody>
+        </table>
+      </div>
+      <p class="xl-hint">點姓名看詳細紀錄、幫客戶加點；表格太寬可以左右滑</p>
       <div class="pager">
         <button class="btn small secondary" id="mm-prev">上一頁</button>
         <span id="mm-page">第 1 頁</span>
@@ -51,7 +59,6 @@
 
     <!-- 會員詳情（手機上整頁換過來，不疊在列表下面） -->
     <div id="mm-detail" style="display:none">
-      <button class="back-link" id="md-back">‹ 會員列表</button>
 
       <div class="card profile">
         <div class="p-name" id="md-title"></div>
@@ -78,8 +85,15 @@
 
       <div class="card">
         <h2>消費與點數紀錄</h2>
-        <ul class="tx-list" id="md-tx"></ul>
+        <div class="xl-wrap">
+          <table class="xl">
+            <thead><tr><th class="sticky">日期時間</th><th>類型</th><th class="num">點數</th><th>備註</th><th>經手人</th></tr></thead>
+            <tbody id="md-tx"></tbody>
+          </table>
+        </div>
       </div>
+
+      <button class="btn danger-outline" id="md-delete">刪除這位客戶</button>
 
       <!-- 會員自己登入之後再做（Steve 2026-09-17），先藏起來，程式保留 -->
       <div class="card" id="md-login-section" style="display:none">
@@ -120,9 +134,9 @@
         <button class="btn small" id="r-daily">每日（近 30 天）</button>
         <button class="btn small secondary" id="r-monthly">每月（近 12 月）</button>
       </div>
-      <div class="table-wrap">
-        <table class="stack grid2">
-          <thead><tr><th>期間</th><th>消費金額</th><th>發出點數</th><th>兌換點數</th><th>活躍會員</th><th>交易筆數</th></tr></thead>
+      <div class="xl-wrap">
+        <table class="xl">
+          <thead><tr><th class="sticky">期間</th><th>消費金額</th><th>發出點數</th><th>兌換點數</th><th>活躍會員</th><th>交易筆數</th></tr></thead>
           <tbody id="r-body"></tbody>
         </table>
       </div>
@@ -136,9 +150,9 @@
         <h2 style="margin:0;white-space:nowrap">帳號列表</h2>
         <button class="btn" id="st-open-modal" style="white-space:nowrap;flex-shrink:0">＋ 新增帳號</button>
       </div>
-      <div class="table-wrap">
-        <table class="stack">
-          <thead><tr><th>姓名</th><th>帳號</th><th>角色</th><th>狀態</th><th>操作</th></tr></thead>
+      <div class="xl-wrap">
+        <table class="xl">
+          <thead><tr><th class="sticky">姓名</th><th>帳號</th><th>角色</th><th>狀態</th><th>操作</th></tr></thead>
           <tbody id="st-body"></tbody>
         </table>
       </div>
@@ -173,6 +187,24 @@
     </div>
   </div>
 
+  <!-- 刪除確認 Modal：每次都問；30 分鐘內輸入過密碼就不用再打 -->
+  <div id="del-modal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
+    <div class="modal-box" style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+      <h3 style="margin-bottom:10px;color:var(--red)">確定要刪除嗎？</h3>
+      <p style="margin-bottom:14px">要刪除「<strong id="del-name"></strong>」，他的點數和消費紀錄會一起刪掉，<strong>刪了就救不回來</strong>。</p>
+      <div id="del-pw-wrap">
+        <label for="del-pw">請輸入你自己的登入密碼</label>
+        <input type="password" id="del-pw" autocomplete="current-password">
+        <p class="field-hint">輸入一次後，30 分鐘內刪除不用再打密碼</p>
+      </div>
+      <p class="field-hint" id="del-grant-hint" style="display:none;margin-top:0"></p>
+      <div style="display:flex;gap:8px">
+        <button class="btn secondary" id="del-cancel" style="flex:1">取消</button>
+        <button class="btn danger" id="del-ok" style="flex:1">確定刪除</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 新增帳號 Modal -->
   <div id="st-modal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
     <div class="modal-box" style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
@@ -195,7 +227,7 @@
   </div>
 </div>
 
-<script src="/js/api.js?v=20260917b"></script>
+<script src="/js/api.js?v=20260917c"></script>
 <script>
 if (!API.guard(['boss', 'admin'])) throw new Error('redirect');
 const msg = document.getElementById('msg');
@@ -225,18 +257,40 @@ document.getElementById('pw-save').onclick = async () => {
   } catch (e) { showMsg(msg, e.message); }
 };
 
-// ---- 分頁籤 ----
-document.querySelectorAll('.tabs button').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 'settings') loadSettings();
-    if (btn.dataset.tab === 'reports') loadReports('daily');
-    if (btn.dataset.tab === 'staff') loadStaff();
-  };
-});
+// ---- 畫面路由：每個畫面有自己的網址（#members、#member/5、#settings…）----
+// 好處：重新整理後停在原畫面；iPhone 左滑／瀏覽器上一頁也能返回
+let navigatedInApp = false; // 這次開頁後有沒有在後台裡切換過畫面（決定「返回」要退一步還是回會員列表）
+function go(hash) {
+  if (location.hash === hash) return route();
+  navigatedInApp = true;
+  location.hash = hash;
+}
+function setTab(tab) {
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
+}
+function route() {
+  const h = location.hash.replace(/^#/, '') || 'members';
+  const m = h.match(/^member\/(\d+)$/);
+  document.getElementById('nav-back').disabled = h === 'members';
+  if (m) { setTab('members'); openDetail(parseInt(m[1])); return; }
+  const tab = ['settings', 'reports', 'staff'].includes(h) ? h : 'members';
+  setTab(tab);
+  if (tab === 'members') showList();
+  if (tab === 'settings') loadSettings();
+  if (tab === 'reports') loadReports('daily');
+  if (tab === 'staff') loadStaff();
+}
+window.addEventListener('hashchange', route);
+document.querySelectorAll('.tabs button').forEach(btn => { btn.onclick = () => go('#' + btn.dataset.tab); });
+document.getElementById('nav-back').onclick = () => {
+  if (navigatedInApp && history.length > 1) history.back();
+  else go('#members');
+};
+document.getElementById('nav-reload').onclick = () => {
+  try { sessionStorage.setItem('mm-q', document.getElementById('mm-q').value); sessionStorage.setItem('mm-page', mmPage); } catch (e) {}
+  location.reload();
+};
 
 // ---- 會員管理 ----
 let mmPage = 1, mmDetailId = null;
@@ -245,19 +299,16 @@ async function loadMembers() {
   try {
     const data = await API.get(`/members?q=${encodeURIComponent(q)}&page=${mmPage}`);
     document.getElementById('mm-body').innerHTML = data.members.map(m => `
-      <div class="m-item" data-id="${m.id}" role="button" tabindex="0">
-        <div class="m-info">
-          <div class="m-name">${esc(m.name)}</div>
-          <div class="m-meta">${m.last_visit ? '最近來訪 <span class="nowrap">' + fmtVisit(m.last_visit) + '</span>' : '尚未來訪'}${m.phone ? '<br>' + esc(m.phone) : ''}</div>
-        </div>
-        <div class="m-count"><b>${m.visit_count || 0}</b><span>次</span></div>
-        <button class="m-del" data-del-id="${m.id}" data-del-name="${esc(m.name)}" aria-label="刪除">刪除</button>
-      </div>`).join('') || '<p class="empty">沒有會員，按上面「＋ 新增客戶」建立第一位</p>';
-    document.getElementById('mm-body').querySelectorAll('.m-item').forEach(el => {
-      el.onclick = e => { if (!e.target.closest('.m-del')) openDetail(parseInt(el.dataset.id)); };
-    });
-    document.getElementById('mm-body').querySelectorAll('button[data-del-id]').forEach(b => {
-      b.onclick = () => deleteMember(parseInt(b.dataset.delId), b.dataset.delName);
+      <tr>
+        <td class="sticky"><a class="xl-link" href="#member/${m.id}" title="${esc(m.name)}">${esc(m.name)}</a></td>
+        <td class="num"><b>${m.balance || 0}</b></td>
+        <td class="num">${m.visit_count || 0} 次</td>
+        <td>${m.last_visit ? fmtVisit(m.last_visit) : '<span class="muted">尚未來訪</span>'}</td>
+        <td>${esc(m.phone || '')}</td>
+        <td><button class="xl-del" data-del-id="${m.id}" data-del-name="${esc(m.name)}">刪除</button></td>
+      </tr>`).join('') || `<tr><td colspan="6" class="empty">${q ? '找不到符合的客戶' : '還沒有客戶，按上面「＋ 新增客戶」建立第一位'}</td></tr>`;
+    document.getElementById('mm-body').querySelectorAll('a.xl-link').forEach(a => {
+      a.onclick = () => { navigatedInApp = true; };
     });
     document.getElementById('mm-page').textContent = `第 ${mmPage} 頁`;
     document.getElementById('mm-next').disabled = !data.hasMore;
@@ -265,11 +316,11 @@ async function loadMembers() {
   } catch (e) { showMsg(msg, e.message); }
 }
 function showList() {
+  mmDetailId = null;
   document.getElementById('mm-detail').style.display = 'none';
   document.getElementById('mm-list-view').style.display = 'block';
-  window.scrollTo(0, 0);
+  loadMembers();
 }
-document.getElementById('md-back').onclick = () => { showList(); loadMembers(); };
 document.getElementById('mm-search-form').onsubmit = e => {
   e.preventDefault();
   document.getElementById('mm-q').blur();
@@ -318,16 +369,15 @@ async function openDetail(id) {
       : '還沒有來訪紀錄';
     document.getElementById('md-tx').innerHTML = data.transactions.map(t => {
       const kind = t.type === 'earn' ? `消費 $${t.amount}` : t.type === 'redeem' ? '兌換扣點' : (t.points > 0 ? '加點' : '扣點');
-      const sub = [kind, t.operator_name, t.note].filter(Boolean).map(esc).join('・');
       return `
-      <li>
-        <div class="tx-l">
-          <div class="tx-when">${fmtVisit(t.created_at)}</div>
-          <div class="tx-sub">${sub}</div>
-        </div>
-        <div class="tx-pts ${t.points > 0 ? 'pts-pos' : 'pts-neg'}">${t.points > 0 ? '+' : ''}${t.points}</div>
-      </li>`;
-    }).join('') || '<li class="empty">還沒有紀錄</li>';
+      <tr>
+        <td class="sticky">${fmtVisit(t.created_at)}</td>
+        <td>${kind}</td>
+        <td class="num ${t.points > 0 ? 'pts-pos' : 'pts-neg'}">${t.points > 0 ? '+' : ''}${t.points}</td>
+        <td>${esc(t.note || '')}</td>
+        <td>${esc(t.operator_name || '')}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="5" class="empty">還沒有紀錄</td></tr>';
     document.getElementById('md-date').value = nowTaipeiInput();
     document.getElementById('md-points').value = '';
     document.getElementById('md-note').value = '';
@@ -369,17 +419,58 @@ document.getElementById('md-login-save').onclick = async () => {
   } catch (e) { showMsg(msg, e.message); }
 };
 
-async function deleteMember(id, name) {
-  if (!confirm(`確定要刪除「${name}」？點數與交易紀錄會一併清除，無法復原。`)) return;
-  const password = prompt('請輸入你自己的密碼確認刪除：');
-  if (!password) return;
+// ---- 刪除客戶：每次都跳確認；密碼輸入一次後 30 分鐘內免再輸入 ----
+// 許可由伺服器簽發（綁定目前登入者＋到期時間），這裡只是暫存起來重用
+const delModal = document.getElementById('del-modal');
+let delTarget = null;
+function getGrant() {
   try {
-    await API.call('/members/' + id, { method: 'DELETE', body: JSON.stringify({ password }) });
-    showMsg(msg, '客戶已刪除', true);
-    if (mmDetailId === id) showList();
-    loadMembers();
-  } catch (e) { showMsg(msg, e.message); }
+    const g = JSON.parse(sessionStorage.getItem('del-grant') || 'null');
+    if (g && g.exp * 1000 > Date.now() + 5000) return g;
+  } catch (e) {}
+  return null;
 }
+function setGrant(g) { try { g ? sessionStorage.setItem('del-grant', JSON.stringify(g)) : sessionStorage.removeItem('del-grant'); } catch (e) {} }
+function openDelete(id, name) {
+  delTarget = { id, name };
+  document.getElementById('del-name').textContent = name;
+  const g = getGrant();
+  document.getElementById('del-pw').value = '';
+  document.getElementById('del-pw-wrap').style.display = g ? 'none' : 'block';
+  const hint = document.getElementById('del-grant-hint');
+  hint.style.display = g ? 'block' : 'none';
+  if (g) hint.textContent = `密碼已確認過，${Math.max(1, Math.ceil((g.exp * 1000 - Date.now()) / 60000))} 分鐘內不用再輸入`;
+  document.getElementById('del-ok').disabled = false;
+  delModal.style.display = 'flex';
+}
+document.getElementById('del-cancel').onclick = () => { delModal.style.display = 'none'; };
+delModal.addEventListener('click', e => { if (e.target === delModal) delModal.style.display = 'none'; });
+document.getElementById('del-ok').onclick = async () => {
+  const okBtn = document.getElementById('del-ok');
+  okBtn.disabled = true;
+  try {
+    let g = getGrant();
+    if (!g) {
+      const pw = document.getElementById('del-pw').value;
+      if (!pw) { okBtn.disabled = false; return showMsg(msg, '請輸入密碼'); }
+      g = await API.post('/auth/delete-grant', { password: pw });
+      setGrant(g);
+    }
+    await API.call('/members/' + delTarget.id, { method: 'DELETE', body: JSON.stringify({ grant: g.grant }) });
+    delModal.style.display = 'none';
+    showMsg(msg, `已刪除「${delTarget.name}」`, true);
+    if (mmDetailId === delTarget.id) go('#members'); else loadMembers();
+  } catch (e) {
+    if (e.code === 'grant_required') { setGrant(null); openDelete(delTarget.id, delTarget.name); }
+    showMsg(msg, e.message);
+    okBtn.disabled = false;
+  }
+};
+document.getElementById('md-delete').onclick = () => openDelete(mmDetailId, document.getElementById('md-title').textContent);
+document.getElementById('mm-body').addEventListener('click', e => {
+  const b = e.target.closest('button[data-del-id]');
+  if (b) openDelete(parseInt(b.dataset.delId), b.dataset.delName);
+});
 
 // ---- 規則設定 ----
 async function loadSettings() {
@@ -429,7 +520,7 @@ async function loadReports(period) {
       <div class="stat-tile"><div class="v">${sum('points_redeemed')}</div><div class="k">期間兌換點數</div></div>`;
     document.getElementById('r-body').innerHTML = data.rows.map(r => `
       <tr>
-        <td class="cell-title">${r.period}</td>
+        <td class="sticky">${r.period}</td>
         <td data-label="消費金額">$${r.total_amount}</td>
         <td data-label="發出點數" class="pts-pos">${r.points_issued}</td>
         <td data-label="兌換點數" class="pts-neg">${r.points_redeemed}</td>
@@ -447,11 +538,11 @@ async function loadStaff() {
     const data = await API.get('/staff');
     document.getElementById('st-body').innerHTML = data.staff.map(s => `
       <tr>
-        <td class="cell-title">${esc(s.name)}</td>
+        <td class="sticky">${esc(s.name)}</td>
         <td data-label="帳號">${esc(s.account)}</td>
         <td data-label="角色"><span class="badge role">${roleName[s.role] || esc(s.role)}</span></td>
         <td data-label="狀態"><span class="badge ${s.active ? 'on' : 'off'}">${s.active ? '啟用' : '停用'}</span></td>
-        <td class="cell-actions">${s.role === 'admin' ? '—' : `
+        <td class="nowrap">${s.role === 'admin' ? '—' : `
           <button class="btn small secondary" data-act="toggle" data-id="${s.id}" data-active="${s.active}">${s.active ? '停用' : '啟用'}</button>
           <button class="btn small secondary" data-act="pw" data-id="${s.id}">重設密碼</button>`}
         </td>
@@ -495,7 +586,13 @@ document.getElementById('st-create').onclick = async () => {
   } catch (e) { showMsg(msg, e.message); }
 };
 
-loadMembers();
+// 重新整理前記下的搜尋字與頁數，整理完還原
+try {
+  document.getElementById('mm-q').value = sessionStorage.getItem('mm-q') || '';
+  mmPage = parseInt(sessionStorage.getItem('mm-page')) || 1;
+  sessionStorage.removeItem('mm-q'); sessionStorage.removeItem('mm-page');
+} catch (e) {}
+route();
 </script>
 </body>
 </html>

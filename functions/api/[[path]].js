@@ -53,6 +53,22 @@ async function verifyToken(secret, token) {
   return parseInt(id);
 }
 
+// 刪除許可：老闆輸入一次密碼後發給前端，30 分鐘內刪會員不用再打密碼
+// 格式 del.<userId>.<exp>.<sig>，綁定操作者，前端改不了、過期自動失效
+const DELETE_GRANT_SECONDS = 30 * 60;
+async function makeDeleteGrant(secret, userId) {
+  const exp = Math.floor(Date.now() / 1000) + DELETE_GRANT_SECONDS;
+  const body = `del.${userId}.${exp}`;
+  return { grant: `${body}.${await hmacSign(secret, body)}`, exp };
+}
+async function verifyDeleteGrant(secret, grant, userId) {
+  const parts = (grant || '').split('.');
+  if (parts.length !== 4 || parts[0] !== 'del') return false;
+  const [, id, exp, sig] = parts;
+  if (parseInt(id) !== userId || parseInt(exp) < Math.floor(Date.now() / 1000)) return false;
+  return sig === await hmacSign(secret, `del.${id}.${exp}`);
+}
+
 // 從請求取得目前使用者（含最新 role / active 狀態）
 async function getUser(request, env) {
   const auth = request.headers.get('Authorization') || '';
@@ -196,7 +212,7 @@ export async function onRequest(context) {
       if ((b.new_password || '').length < 6) return err('新密碼至少 6 個字元');
       const full = await env.DB.prepare('SELECT password_hash, salt FROM users WHERE id = ?').bind(user.id).first();
       const oldHash = await pbkdf2(b.old_password || '', full.salt);
-      if (oldHash !== full.password_hash) return err('舊密碼錯誤', 401);
+      if (oldHash !== full.password_hash) return err('舊密碼錯誤'); // 不回 401，免得前端當成登入過期把人登出
       const salt = hex(crypto.getRandomValues(new Uint8Array(16)));
       const hash = await pbkdf2(b.new_password, salt);
       await env.DB.prepare('UPDATE users SET password_hash = ?, salt = ? WHERE id = ?').bind(hash, salt, user.id).run();
@@ -221,7 +237,8 @@ export async function onRequest(context) {
         // last_visit／visit_count：以「加點」紀錄（points > 0）當作來上課的時間
         `SELECT u.id, u.account, u.name, u.phone, u.email, u.active, u.created_at,
                 (SELECT MAX(t.created_at) FROM transactions t WHERE t.user_id = u.id AND t.points > 0) AS last_visit,
-                (SELECT COUNT(*) FROM transactions t WHERE t.user_id = u.id AND t.points > 0) AS visit_count
+                (SELECT COUNT(*) FROM transactions t WHERE t.user_id = u.id AND t.points > 0) AS visit_count,
+                (SELECT COALESCE(SUM(t.remaining),0) FROM transactions t WHERE t.user_id = u.id AND t.remaining > 0 AND t.expires_at > datetime('now')) AS balance
          FROM users u WHERE ${where} ORDER BY u.id DESC LIMIT ${per + 1} OFFSET ${(page - 1) * per}`
       ).bind(...binds).all();
       const hasMore = results.length > per;
@@ -298,15 +315,27 @@ export async function onRequest(context) {
       const denied = requireRole(user, 'boss');
       if (denied) return denied;
       const id = parseInt(memberMatch[1]);
-      const b = await request.json();
-      const full = await env.DB.prepare('SELECT password_hash, salt FROM users WHERE id = ?').bind(user.id).first();
-      const hash = await pbkdf2(b.password || '', full.salt);
-      if (hash !== full.password_hash) return err('密碼錯誤', 401);
+      const b = await request.json().catch(() => ({}));
+      if (!(await verifyDeleteGrant(env.AUTH_SECRET, b.grant, user.id))) {
+        return json({ error: '請輸入密碼確認', code: 'grant_required' }, 400);
+      }
       const target = await env.DB.prepare("SELECT id FROM users WHERE id = ? AND role = 'member'").bind(id).first();
       if (!target) return err('找不到會員', 404);
       await env.DB.prepare('DELETE FROM transactions WHERE user_id = ?').bind(id).run();
       await env.DB.prepare('DELETE FROM users WHERE id = ?').bind(id).run();
       return json({ ok: true });
+    }
+
+    // 輸入自己的密碼換一張 30 分鐘的刪除許可
+    // 密碼錯回 400 不回 401：前端收到 401 會當成登入過期直接登出
+    if (path === '/auth/delete-grant' && method === 'POST') {
+      const denied = requireRole(user, 'boss');
+      if (denied) return denied;
+      const b = await request.json().catch(() => ({}));
+      const full = await env.DB.prepare('SELECT password_hash, salt FROM users WHERE id = ?').bind(user.id).first();
+      const hash = await pbkdf2(String(b.password || '').slice(0, 200), full.salt);
+      if (hash !== full.password_hash) return err('密碼錯誤');
+      return json(await makeDeleteGrant(env.AUTH_SECRET, user.id));
     }
 
     // 用帳號找會員（掃 QR Code 後查詢）
