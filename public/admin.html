@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
 <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -33,18 +33,18 @@
   <!-- 會員管理 -->
   <div class="tab-panel active" id="panel-members">
     <div class="card">
-      <div class="row">
+      <div class="row search-row">
         <input type="text" id="mm-q" placeholder="搜尋手機／Email／姓名" style="flex:3">
         <button class="btn small" id="mm-search" style="flex:1">搜尋</button>
         <button class="btn small" id="mm-open-new" style="flex:1">＋新增客戶</button>
       </div>
       <div class="table-wrap">
-        <table>
-          <thead><tr><th>姓名</th><th>帳號</th><th>加入日</th><th></th></tr></thead>
+        <table class="stack">
+          <thead><tr><th>姓名</th><th>最近來訪</th><th>來訪次數</th><th>帳號</th><th></th></tr></thead>
           <tbody id="mm-body"></tbody>
         </table>
       </div>
-      <div class="row" style="margin-top:12px">
+      <div class="row pager" style="margin-top:12px">
         <button class="btn small secondary" id="mm-prev">上一頁</button>
         <span id="mm-page" style="text-align:center;line-height:2">第 1 頁</span>
         <button class="btn small secondary" id="mm-next">下一頁</button>
@@ -53,12 +53,13 @@
 
     <!-- 會員詳情 + 補扣點 -->
     <div class="card" id="mm-detail" style="display:none">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div class="detail-head">
         <button class="btn small secondary" id="md-back">← 返回列表</button>
         <h2 id="md-title" style="margin:0"></h2>
       </div>
       <p>目前餘額：<strong id="md-balance" style="color:var(--primary);font-size:1.3rem"></strong> 點</p>
-      <div class="row" style="margin-top:12px">
+      <div class="visit-summary" id="md-visits"></div>
+      <div class="row form-row" style="margin-top:12px">
         <div>
           <label>調整點數（正=補點，負=扣點）</label>
           <input type="number" id="md-points">
@@ -68,13 +69,14 @@
           <input type="text" id="md-note" placeholder="例：活動補點">
         </div>
         <div>
-          <label>交易日期（選填，補點才用，預設今天）</label>
-          <input type="date" id="md-date">
+          <label>上課時間（補點才用，預設現在）</label>
+          <input type="datetime-local" id="md-date">
         </div>
       </div>
       <button class="btn" id="md-adjust">確認調整</button>
-      <div class="table-wrap" style="margin-top:16px">
-        <table>
+      <h3 style="margin:18px 0 6px">點數與來訪紀錄</h3>
+      <div class="table-wrap">
+        <table class="stack">
           <thead><tr><th>時間</th><th>類型</th><th>金額</th><th>點數</th><th>經手人</th><th>備註</th></tr></thead>
           <tbody id="md-tx"></tbody>
         </table>
@@ -83,7 +85,7 @@
       <hr style="margin:20px 0;border:none;border-top:1px solid var(--border)">
       <h3 style="margin-bottom:8px">設定登入帳密</h3>
       <p style="font-size:.85rem;color:var(--muted);margin-bottom:10px" id="md-login-hint"></p>
-      <div class="row">
+      <div class="row form-row">
         <div>
           <label>帳號（手機號碼或 Email）</label>
           <input type="text" id="md-login-account">
@@ -124,7 +126,7 @@
         <button class="btn small secondary" id="r-monthly">每月（近 12 月）</button>
       </div>
       <div class="table-wrap">
-        <table>
+        <table class="stack">
           <thead><tr><th>期間</th><th>消費金額</th><th>發出點數</th><th>兌換點數</th><th>活躍會員</th><th>交易筆數</th></tr></thead>
           <tbody id="r-body"></tbody>
         </table>
@@ -140,7 +142,7 @@
         <button class="btn" id="st-open-modal" style="white-space:nowrap;flex-shrink:0">＋ 新增帳號</button>
       </div>
       <div class="table-wrap">
-        <table>
+        <table class="stack">
           <thead><tr><th>姓名</th><th>帳號</th><th>角色</th><th>狀態</th><th>操作</th></tr></thead>
           <tbody id="st-body"></tbody>
         </table>
@@ -150,7 +152,7 @@
 
   <!-- 改密碼 Modal -->
   <div id="pw-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
-    <div style="background:var(--card);border-radius:12px;padding:24px;width:90%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <div class="modal-box" style="background:var(--card);border-radius:12px;padding:24px;width:90%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
       <h3 style="margin-bottom:16px;color:var(--primary)">修改密碼</h3>
       <label>舊密碼<input type="password" id="pw-old" style="display:block;width:100%;margin-top:4px"></label>
       <label>新密碼（至少 6 字元）<input type="password" id="pw-new" style="display:block;width:100%;margin-top:4px"></label>
@@ -163,12 +165,12 @@
 
   <!-- 新增客戶 Modal -->
   <div id="nc-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <div class="modal-box" style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
       <h3 style="margin-bottom:16px;color:var(--primary)">新增客戶</h3>
       <label style="display:block;margin-bottom:8px">姓名<input type="text" id="nc-name" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <label style="display:block;margin-bottom:8px">手機（選填）<input type="text" id="nc-phone" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <label style="display:block;margin-bottom:8px">初始點數（選填）<input type="number" id="nc-points" class="input" min="0" style="display:block;width:100%;margin-top:4px"></label>
-      <label style="display:block;margin-bottom:16px">交易日期（選填，預設今天；例如課程包第一堂實際上課日）<input type="date" id="nc-date" class="input" style="display:block;width:100%;margin-top:4px"></label>
+      <label style="display:block;margin-bottom:16px">上課時間（有初始點數才用，預設現在）<input type="datetime-local" id="nc-date" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <div style="display:flex;gap:8px">
         <button class="btn" id="nc-create" style="flex:1">建立客戶</button>
         <button class="btn secondary" id="nc-cancel" style="flex:1">取消</button>
@@ -178,7 +180,7 @@
 
   <!-- 新增帳號 Modal -->
   <div id="st-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <div class="modal-box" style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
       <h3 style="margin-bottom:16px;color:var(--primary)">新增店員／老闆帳號</h3>
       <label style="display:block;margin-bottom:8px">帳號<input type="text" id="st-account" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <label style="display:block;margin-bottom:8px">姓名<input type="text" id="st-name" class="input" style="display:block;width:100%;margin-top:4px"></label>
@@ -249,14 +251,15 @@ async function loadMembers() {
     const data = await API.get(`/members?q=${encodeURIComponent(q)}&page=${mmPage}`);
     document.getElementById('mm-body').innerHTML = data.members.map(m => `
       <tr>
-        <td>${m.name}</td>
-        <td>${m.account || '免登入'}</td>
-        <td>${fmtDateOnly(m.created_at)}</td>
-        <td style="white-space:nowrap">
+        <td class="cell-title">${esc(m.name)}</td>
+        <td data-label="最近來訪">${m.last_visit ? fmtVisit(m.last_visit) : '尚未來訪'}</td>
+        <td data-label="來訪次數">${m.visit_count || 0} 次</td>
+        <td data-label="帳號">${esc(m.account || '免登入')}</td>
+        <td class="cell-actions">
           <button class="btn small" data-id="${m.id}">詳情</button>
-          <button class="btn small danger" data-del-id="${m.id}" data-del-name="${m.name}">刪除</button>
+          <button class="btn small danger" data-del-id="${m.id}" data-del-name="${esc(m.name)}">刪除</button>
         </td>
-      </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted)">沒有會員</td></tr>';
+      </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">沒有會員</td></tr>';
     document.getElementById('mm-body').querySelectorAll('button[data-id]').forEach(b => {
       b.onclick = () => openDetail(parseInt(b.dataset.id));
     });
@@ -280,7 +283,8 @@ document.getElementById('mm-next').onclick = () => { mmPage++; loadMembers(); };
 // ---- 新增客戶（免註冊）----
 const ncModal = document.getElementById('nc-modal');
 document.getElementById('mm-open-new').onclick = () => {
-  ['nc-name', 'nc-phone', 'nc-points', 'nc-date'].forEach(id => document.getElementById(id).value = '');
+  ['nc-name', 'nc-phone', 'nc-points'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('nc-date').value = nowTaipeiInput();
   ncModal.style.display = 'flex';
 };
 document.getElementById('nc-cancel').onclick = () => { ncModal.style.display = 'none'; };
@@ -308,15 +312,20 @@ async function openDetail(id) {
     mmDetailId = id;
     document.getElementById('md-title').textContent = `${data.member.name}（${data.member.account || '免登入'}）`;
     document.getElementById('md-balance').textContent = data.balance;
+    const visits = data.transactions.filter(t => t.points > 0);
+    document.getElementById('md-visits').innerHTML = visits.length
+      ? `最近來訪：<strong>${fmtVisit(visits[0].created_at)}</strong><br>共來訪 <strong>${visits.length}</strong> 次${data.transactions.length >= 200 ? '（只算最近 200 筆紀錄）' : ''}`
+      : '還沒有加點（來訪）紀錄';
     document.getElementById('md-tx').innerHTML = data.transactions.map(t => `
       <tr>
-        <td>${fmtDate(t.created_at)}</td>
-        <td>${txTypeName(t.type)}</td>
-        <td>${t.type === 'earn' ? '$' + t.amount : '—'}</td>
-        <td class="${t.points > 0 ? 'pts-pos' : 'pts-neg'}">${t.points > 0 ? '+' : ''}${t.points}</td>
-        <td>${t.operator_name || '—'}</td>
-        <td>${t.note || ''}</td>
-      </tr>`).join('');
+        <td class="cell-title">${fmtVisit(t.created_at)}</td>
+        <td data-label="類型">${txTypeName(t.type)}</td>
+        <td data-label="金額">${t.type === 'earn' ? '$' + t.amount : '—'}</td>
+        <td data-label="點數" class="${t.points > 0 ? 'pts-pos' : 'pts-neg'}">${t.points > 0 ? '+' : ''}${t.points}</td>
+        <td data-label="經手人">${esc(t.operator_name || '—')}</td>
+        <td data-label="備註">${esc(t.note || '')}</td>
+      </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">尚無紀錄</td></tr>';
+    document.getElementById('md-date').value = nowTaipeiInput();
     document.getElementById('md-login-hint').textContent = data.member.account
       ? `目前登入帳號：${data.member.account}（下面可以重設密碼，或改成新帳號）`
       : '目前免登入（客戶不能自己看餘額），下面可以幫他開通登入';
@@ -339,7 +348,6 @@ document.getElementById('md-adjust').onclick = async () => {
     });
     showMsg(msg, `調整完成，餘額 ${data.balance} 點`, true);
     document.getElementById('md-points').value = '';
-    document.getElementById('md-date').value = '';
     openDetail(mmDetailId);
   } catch (e) { showMsg(msg, e.message); }
 };
@@ -415,12 +423,12 @@ async function loadReports(period) {
       <div class="stat-tile"><div class="v">${sum('points_redeemed')}</div><div class="k">期間兌換點數</div></div>`;
     document.getElementById('r-body').innerHTML = data.rows.map(r => `
       <tr>
-        <td>${r.period}</td>
-        <td>$${r.total_amount}</td>
-        <td class="pts-pos">${r.points_issued}</td>
-        <td class="pts-neg">${r.points_redeemed}</td>
-        <td>${r.active_members}</td>
-        <td>${r.tx_count}</td>
+        <td class="cell-title">${r.period}</td>
+        <td data-label="消費金額">$${r.total_amount}</td>
+        <td data-label="發出點數" class="pts-pos">${r.points_issued}</td>
+        <td data-label="兌換點數" class="pts-neg">${r.points_redeemed}</td>
+        <td data-label="活躍會員">${r.active_members}</td>
+        <td data-label="交易筆數">${r.tx_count}</td>
       </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">期間內沒有交易</td></tr>';
   } catch (e) { showMsg(msg, e.message); }
 }
@@ -433,11 +441,11 @@ async function loadStaff() {
     const data = await API.get('/staff');
     document.getElementById('st-body').innerHTML = data.staff.map(s => `
       <tr>
-        <td>${s.name}</td>
-        <td>${s.account}</td>
-        <td><span class="badge role">${roleName[s.role] || s.role}</span></td>
-        <td><span class="badge ${s.active ? 'on' : 'off'}">${s.active ? '啟用' : '停用'}</span></td>
-        <td>${s.role === 'admin' ? '—' : `
+        <td class="cell-title">${esc(s.name)}</td>
+        <td data-label="帳號">${esc(s.account)}</td>
+        <td data-label="角色"><span class="badge role">${roleName[s.role] || esc(s.role)}</span></td>
+        <td data-label="狀態"><span class="badge ${s.active ? 'on' : 'off'}">${s.active ? '啟用' : '停用'}</span></td>
+        <td class="cell-actions">${s.role === 'admin' ? '—' : `
           <button class="btn small secondary" data-act="toggle" data-id="${s.id}" data-active="${s.active}">${s.active ? '停用' : '啟用'}</button>
           <button class="btn small secondary" data-act="pw" data-id="${s.id}">重設密碼</button>`}
         </td>

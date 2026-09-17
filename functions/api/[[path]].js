@@ -120,6 +120,21 @@ function validAccount(account) {
   return /^09\d{8}$/.test(account) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account);
 }
 
+// 前端送來的台灣時間（YYYY-MM-DDTHH:MM 或只有 YYYY-MM-DD）轉成 D1 用的 UTC 字串；空值＝現在
+// 不合法回 null。不准填超過現在 1 小時以後的時間（防手滑填到未來）
+function toUtcSql(input) {
+  const s = (input || '').trim();
+  let d;
+  if (!s) d = new Date();
+  else {
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/);
+    if (!m) return null;
+    d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 12) - 8, +(m[5] || 0)));
+    if (isNaN(d) || d.getTime() > Date.now() + 3600 * 1000) return null;
+  }
+  return d.toISOString().slice(0, 19).replace('T', ' ');
+}
+
 // ---------- 主路由 ----------
 export async function onRequest(context) {
   const { request, env } = context;
@@ -203,7 +218,11 @@ export async function onRequest(context) {
         binds = [like, like, like, like];
       }
       const { results } = await env.DB.prepare(
-        `SELECT id, account, name, phone, email, active, created_at FROM users WHERE ${where} ORDER BY id DESC LIMIT ${per + 1} OFFSET ${(page - 1) * per}`
+        // last_visit／visit_count：以「加點」紀錄（points > 0）當作來上課的時間
+        `SELECT u.id, u.account, u.name, u.phone, u.email, u.active, u.created_at,
+                (SELECT MAX(t.created_at) FROM transactions t WHERE t.user_id = u.id AND t.points > 0) AS last_visit,
+                (SELECT COUNT(*) FROM transactions t WHERE t.user_id = u.id AND t.points > 0) AS visit_count
+         FROM users u WHERE ${where} ORDER BY u.id DESC LIMIT ${per + 1} OFFSET ${(page - 1) * per}`
       ).bind(...binds).all();
       const hasMore = results.length > per;
       return json({ members: results.slice(0, per), hasMore, page });
@@ -224,10 +243,11 @@ export async function onRequest(context) {
       const userId = result.meta.last_row_id;
       if (points > 0) {
         const s = await getSettings(env);
-        const dateVal = (b.date || '').trim() || 'now';
+        const dateVal = toUtcSql(b.date);
+        if (!dateVal) return err('上課時間格式不正確，或填到未來的時間');
         await env.DB.prepare(
           `INSERT INTO transactions (user_id, type, points, remaining, expires_at, operator_id, note, created_at)
-           VALUES (?,'adjust',?,?,datetime(?,'+${s.validity_months} months'),?,?,datetime(?))`
+           VALUES (?,'adjust',?,?,datetime(?,'+${s.validity_months} months'),?,?,?)`
         ).bind(userId, points, points, dateVal, user.id, b.note || '新增客戶', dateVal).run();
       }
       const balance = await getBalance(env, userId);
@@ -248,7 +268,7 @@ export async function onRequest(context) {
       const { results: txs } = await env.DB.prepare(
         `SELECT t.id, t.type, t.amount, t.points, t.expires_at, t.note, t.created_at, o.name AS operator_name
          FROM transactions t LEFT JOIN users o ON o.id = t.operator_id
-         WHERE t.user_id = ? ORDER BY t.created_at DESC, t.id DESC LIMIT 30`
+         WHERE t.user_id = ? ORDER BY t.created_at DESC, t.id DESC LIMIT 200`
       ).bind(id).all();
       return json({ member: m, balance, expiring, transactions: txs });
     }
@@ -348,10 +368,11 @@ export async function onRequest(context) {
       if (!userId || !points) return err('點數不正確');
       if (points > 0) {
         const s = await getSettings(env);
-        const dateVal = (b.date || '').trim() || 'now';
+        const dateVal = toUtcSql(b.date);
+        if (!dateVal) return err('上課時間格式不正確，或填到未來的時間');
         await env.DB.prepare(
           `INSERT INTO transactions (user_id, type, points, remaining, expires_at, operator_id, note, created_at)
-           VALUES (?,'adjust',?,?,datetime(?,'+${s.validity_months} months'),?,?,datetime(?))`
+           VALUES (?,'adjust',?,?,datetime(?,'+${s.validity_months} months'),?,?,?)`
         ).bind(userId, points, points, dateVal, user.id, b.note || '手動補點', dateVal).run();
       } else {
         const stmts = await buildDeduction(env, userId, -points);

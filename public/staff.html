@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>店員作業｜喜翻親子感統遊戲空間</title>
 <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -25,7 +25,7 @@
   <!-- 找會員 -->
   <div class="card" id="find-card">
     <h2>找會員</h2>
-    <div class="row">
+    <div class="row search-row">
       <input type="text" id="search-q" placeholder="手機／Email／姓名" style="flex:3">
       <button class="btn small" id="btn-search" style="flex:1">搜尋</button>
     </div>
@@ -66,7 +66,7 @@
     <div class="card">
       <h2>近期交易</h2>
       <div class="table-wrap">
-        <table>
+        <table class="stack">
           <thead><tr><th>時間</th><th>類型</th><th>點數</th><th>經手人</th></tr></thead>
           <tbody id="m-tx"></tbody>
         </table>
@@ -77,7 +77,7 @@
 
 <!-- 改密碼 Modal -->
 <div id="pw-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
-  <div style="background:var(--card);border-radius:12px;padding:24px;width:90%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+  <div class="modal-box" style="background:var(--card);border-radius:12px;padding:24px;width:90%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
     <h3 style="margin-bottom:16px;color:var(--primary)">修改密碼</h3>
     <label>舊密碼<input type="password" id="pw-old" style="display:block;width:100%;margin-top:4px"></label>
     <label>新密碼（至少 6 字元）<input type="password" id="pw-new" style="display:block;width:100%;margin-top:4px"></label>
@@ -134,7 +134,7 @@ async function doSearch() {
       return;
     }
     ul.innerHTML = data.members.map(m =>
-      `<li data-id="${m.id}"><strong>${m.name}</strong><br><small>${m.account}</small></li>`).join('');
+      `<li data-id="${m.id}"><strong>${esc(m.name)}</strong><br><small>${esc(m.account || '免登入')}・最近來訪 ${m.last_visit ? fmtVisit(m.last_visit) : '無'}</small></li>`).join('');
     ul.querySelectorAll('li[data-id]').forEach(li => {
       li.onclick = () => selectMember(parseInt(li.dataset.id));
     });
@@ -194,19 +194,19 @@ async function selectMember(id) {
     const data = await API.get('/members/' + id);
     currentMember = data.member;
     document.getElementById('m-name').textContent = data.member.name;
-    document.getElementById('m-account').textContent = data.member.account;
+    document.getElementById('m-account').textContent = data.member.account || '免登入';
     document.getElementById('m-balance').textContent = data.balance;
     const exp = document.getElementById('m-expiring');
     if (data.expiring.points > 0) {
       exp.style.display = 'block';
       exp.textContent = `${data.expiring.points} 點將於 ${fmtDateOnly(data.expiring.earliest)} 前到期`;
     } else exp.style.display = 'none';
-    document.getElementById('m-tx').innerHTML = data.transactions.map(t => `
+    document.getElementById('m-tx').innerHTML = data.transactions.slice(0, 30).map(t => `
       <tr>
-        <td>${fmtDate(t.created_at)}</td>
-        <td>${txTypeName(t.type)}</td>
-        <td class="${t.points > 0 ? 'pts-pos' : 'pts-neg'}">${t.points > 0 ? '+' : ''}${t.points}</td>
-        <td>${t.operator_name || '—'}</td>
+        <td class="cell-title">${fmtVisit(t.created_at)}</td>
+        <td data-label="類型">${txTypeName(t.type)}</td>
+        <td data-label="點數" class="${t.points > 0 ? 'pts-pos' : 'pts-neg'}">${t.points > 0 ? '+' : ''}${t.points}</td>
+        <td data-label="經手人">${esc(t.operator_name || '—')}</td>
       </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted)">尚無紀錄</td></tr>';
     document.getElementById('find-card').style.display = 'none';
     document.getElementById('member-section').style.display = 'block';

@@ -57,6 +57,22 @@ function fmtDate(s) {
   const d = new Date(s.replace(' ', 'T') + 'Z');
   return d.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
 }
+// 來訪紀錄用：2026/09/17（四）14:30
+function fmtVisit(s) {
+  if (!s) return '';
+  const d = new Date(s.replace(' ', 'T') + 'Z');
+  const p = new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'narrow', hour: '2-digit', minute: '2-digit', hour12: false })
+    .formatToParts(d).reduce((o, x) => (o[x.type] = x.value, o), {});
+  return `${p.year}/${p.month}/${p.day}（${p.weekday}）${p.hour}:${p.minute}`;
+}
+// datetime-local 輸入框的預設值：台灣現在時間 YYYY-MM-DDTHH:MM
+function nowTaipeiInput() {
+  return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 16);
+}
+// 塞進 innerHTML 前一律跳脫，避免姓名／備註被當成 HTML 執行
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 function fmtDateOnly(s) {
   if (!s) return '';
   const d = new Date(s.replace(' ', 'T') + 'Z');

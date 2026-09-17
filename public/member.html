@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>我的點數｜喜翻親子感統遊戲空間</title>
 <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -48,7 +48,7 @@
   <div class="card">
     <h2>點數明細</h2>
     <div class="table-wrap">
-      <table>
+      <table class="stack">
         <thead><tr><th>時間</th><th>類型</th><th>金額</th><th>點數</th><th>到期日</th></tr></thead>
         <tbody id="tx-body"></tbody>
       </table>
@@ -97,11 +97,11 @@ async function load() {
 
     document.getElementById('tx-body').innerHTML = data.transactions.map(t => `
       <tr>
-        <td>${fmtDate(t.created_at)}</td>
-        <td>${txTypeName(t.type)}</td>
-        <td>${t.type === 'earn' ? '$' + t.amount : '—'}</td>
-        <td class="${t.points > 0 ? 'pts-pos' : 'pts-neg'}">${t.points > 0 ? '+' : ''}${t.points}</td>
-        <td>${t.expires_at ? fmtDateOnly(t.expires_at) : '—'}</td>
+        <td class="cell-title">${fmtVisit(t.created_at)}</td>
+        <td data-label="類型">${txTypeName(t.type)}</td>
+        <td data-label="金額">${t.type === 'earn' ? '$' + t.amount : '—'}</td>
+        <td data-label="點數" class="${t.points > 0 ? 'pts-pos' : 'pts-neg'}">${t.points > 0 ? '+' : ''}${t.points}</td>
+        <td data-label="到期日">${t.expires_at ? fmtDateOnly(t.expires_at) : '—'}</td>
       </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">尚無交易紀錄</td></tr>';
   } catch (e) { showMsg(msg, e.message); }
 }
