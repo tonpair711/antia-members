@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理後台｜喜翻親子感統遊戲空間</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <img src="/images/logo.jpg" alt="">
+    <h1>管理後台<small>喜翻親子感統遊戲空間</small></h1>
+  </div>
+  <div class="user-info">
+    <span id="user-name"></span>
+    <button onclick="location.href='/staff.html'">店員作業</button>
+    <button id="btn-pw">改密碼</button>
+    <button id="btn-logout">登出</button>
+  </div>
+</header>
+
+<div class="container wide">
+  <div class="msg" id="msg"></div>
+
+  <div class="tabs">
+    <button data-tab="members" class="active">會員管理</button>
+    <button data-tab="settings">規則設定</button>
+    <button data-tab="reports">統計報表</button>
+    <button data-tab="staff" id="tab-staff-btn" style="display:none">帳號管理</button>
+  </div>
+
+  <!-- 會員管理 -->
+  <div class="tab-panel active" id="panel-members">
+    <div class="card">
+      <div class="row">
+        <input type="text" id="mm-q" placeholder="搜尋手機／Email／姓名" style="flex:3">
+        <button class="btn small" id="mm-search" style="flex:1">搜尋</button>
+        <button class="btn small" id="mm-open-new" style="flex:1">＋新增客戶</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>姓名</th><th>帳號</th><th>加入日</th><th></th></tr></thead>
+          <tbody id="mm-body"></tbody>
+        </table>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn small secondary" id="mm-prev">上一頁</button>
+        <span id="mm-page" style="text-align:center;line-height:2">第 1 頁</span>
+        <button class="btn small secondary" id="mm-next">下一頁</button>
+      </div>
+    </div>
+
+    <!-- 會員詳情 + 補扣點 -->
+    <div class="card" id="mm-detail" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <button class="btn small secondary" id="md-back">← 返回列表</button>
+        <h2 id="md-title" style="margin:0"></h2>
+      </div>
+      <p>目前餘額：<strong id="md-balance" style="color:var(--primary);font-size:1.3rem"></strong> 點</p>
+      <div class="row" style="margin-top:12px">
+        <div>
+          <label>調整點數（正=補點，負=扣點）</label>
+          <input type="number" id="md-points">
+        </div>
+        <div>
+          <label>備註</label>
+          <input type="text" id="md-note" placeholder="例：活動補點">
+        </div>
+      </div>
+      <button class="btn" id="md-adjust">確認調整</button>
+      <div class="table-wrap" style="margin-top:16px">
+        <table>
+          <thead><tr><th>時間</th><th>類型</th><th>金額</th><th>點數</th><th>經手人</th><th>備註</th></tr></thead>
+          <tbody id="md-tx"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 規則設定 -->
+  <div class="tab-panel" id="panel-settings">
+    <div class="card">
+      <h2>點數規則</h2>
+      <div class="row">
+        <div><label>每消費金額（元）</label><input type="number" id="s-rate-amount" min="1"></div>
+        <div><label>可得點數</label><input type="number" id="s-rate-points" min="1"></div>
+      </div>
+      <div class="row">
+        <div><label>點數有效期（月）</label><input type="number" id="s-validity" min="1"></div>
+        <div><label>1 點折抵金額（元）</label><input type="number" id="s-redeem-value" min="1"></div>
+      </div>
+      <p class="preview-hint" id="s-preview"></p>
+      <button class="btn" id="s-save">儲存規則</button>
+      <p style="font-size:.8rem;color:var(--muted);margin-top:8px">※ 規則修改只影響之後的交易，已發出的點數不變。</p>
+    </div>
+  </div>
+
+  <!-- 統計報表 -->
+  <div class="tab-panel" id="panel-reports">
+    <div class="stat-row" id="r-stats"></div>
+    <div class="card">
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn small" id="r-daily">每日（近 30 天）</button>
+        <button class="btn small secondary" id="r-monthly">每月（近 12 月）</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>期間</th><th>消費金額</th><th>發出點數</th><th>兌換點數</th><th>活躍會員</th><th>交易筆數</th></tr></thead>
+          <tbody id="r-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 帳號管理（admin） -->
+  <div class="tab-panel" id="panel-staff">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px">
+        <h2 style="margin:0;white-space:nowrap">帳號列表</h2>
+        <button class="btn" id="st-open-modal" style="white-space:nowrap;flex-shrink:0">＋ 新增帳號</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>姓名</th><th>帳號</th><th>角色</th><th>狀態</th><th>操作</th></tr></thead>
+          <tbody id="st-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 改密碼 Modal -->
+  <div id="pw-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
+    <div style="background:var(--card);border-radius:12px;padding:24px;width:90%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+      <h3 style="margin-bottom:16px;color:var(--primary)">修改密碼</h3>
+      <label>舊密碼<input type="password" id="pw-old" style="display:block;width:100%;margin-top:4px"></label>
+      <label>新密碼（至少 6 字元）<input type="password" id="pw-new" style="display:block;width:100%;margin-top:4px"></label>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn" id="pw-save" style="flex:1">儲存</button>
+        <button class="btn secondary" id="pw-cancel" style="flex:1">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增客戶 Modal -->
+  <div id="nc-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+      <h3 style="margin-bottom:16px;color:var(--primary)">新增客戶</h3>
+      <label style="display:block;margin-bottom:8px">姓名<input type="text" id="nc-name" class="input" style="display:block;width:100%;margin-top:4px"></label>
+      <label style="display:block;margin-bottom:8px">手機（選填）<input type="text" id="nc-phone" class="input" style="display:block;width:100%;margin-top:4px"></label>
+      <label style="display:block;margin-bottom:16px">初始點數（選填）<input type="number" id="nc-points" class="input" min="0" style="display:block;width:100%;margin-top:4px"></label>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="nc-create" style="flex:1">建立客戶</button>
+        <button class="btn secondary" id="nc-cancel" style="flex:1">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增帳號 Modal -->
+  <div id="st-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+      <h3 style="margin-bottom:16px;color:var(--primary)">新增店員／老闆帳號</h3>
+      <label style="display:block;margin-bottom:8px">帳號<input type="text" id="st-account" class="input" style="display:block;width:100%;margin-top:4px"></label>
+      <label style="display:block;margin-bottom:8px">姓名<input type="text" id="st-name" class="input" style="display:block;width:100%;margin-top:4px"></label>
+      <label style="display:block;margin-bottom:8px">密碼（至少 6 字元）<input type="password" id="st-password" class="input" style="display:block;width:100%;margin-top:4px"></label>
+      <label style="display:block;margin-bottom:16px">角色
+        <select id="st-role" class="input" style="display:block;width:100%;margin-top:4px">
+          <option value="staff">店員</option>
+          <option value="boss">老闆</option>
+          <option value="admin">管理員</option>
+        </select>
+      </label>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="st-create" style="flex:1">建立帳號</button>
+        <button class="btn secondary" id="st-cancel" style="flex:1">取消</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+if (!API.guard(['boss', 'admin'])) throw new Error('redirect');
+const msg = document.getElementById('msg');
+document.getElementById('user-name').textContent = API.name;
+document.getElementById('btn-logout').onclick = () => API.logout();
+if (API.role === 'admin') document.getElementById('tab-staff-btn').style.display = 'block';
+
+const roleName = { staff: '店員', boss: '老闆', admin: '管理員' };
+
+// ---- 改密碼 ----
+const pwModal = document.getElementById('pw-modal');
+document.getElementById('btn-pw').onclick = () => {
+  document.getElementById('pw-old').value = '';
+  document.getElementById('pw-new').value = '';
+  pwModal.style.display = 'flex';
+};
+document.getElementById('pw-cancel').onclick = () => { pwModal.style.display = 'none'; };
+pwModal.addEventListener('click', e => { if (e.target === pwModal) pwModal.style.display = 'none'; });
+document.getElementById('pw-save').onclick = async () => {
+  try {
+    await API.post('/me/password', {
+      old_password: document.getElementById('pw-old').value,
+      new_password: document.getElementById('pw-new').value,
+    });
+    pwModal.style.display = 'none';
+    showMsg(msg, '密碼已更新', true);
+  } catch (e) { showMsg(msg, e.message); }
+};
+
+// ---- 分頁籤 ----
+document.querySelectorAll('.tabs button').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'settings') loadSettings();
+    if (btn.dataset.tab === 'reports') loadReports('daily');
+    if (btn.dataset.tab === 'staff') loadStaff();
+  };
+});
+
+// ---- 會員管理 ----
+let mmPage = 1, mmDetailId = null;
+async function loadMembers() {
+  const q = document.getElementById('mm-q').value.trim();
+  try {
+    const data = await API.get(`/members?q=${encodeURIComponent(q)}&page=${mmPage}`);
+    document.getElementById('mm-body').innerHTML = data.members.map(m => `
+      <tr>
+        <td>${m.name}</td>
+        <td>${m.account || '免登入'}</td>
+        <td>${fmtDateOnly(m.created_at)}</td>
+        <td><button class="btn small" data-id="${m.id}">詳情</button></td>
+      </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted)">沒有會員</td></tr>';
+    document.getElementById('mm-body').querySelectorAll('button[data-id]').forEach(b => {
+      b.onclick = () => openDetail(parseInt(b.dataset.id));
+    });
+    document.getElementById('mm-page').textContent = `第 ${mmPage} 頁`;
+    document.getElementById('mm-next').disabled = !data.hasMore;
+    document.getElementById('mm-prev').disabled = mmPage <= 1;
+  } catch (e) { showMsg(msg, e.message); }
+}
+document.getElementById('md-back').onclick = () => {
+  document.getElementById('mm-detail').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+document.getElementById('mm-search').onclick = () => { mmPage = 1; loadMembers(); };
+document.getElementById('mm-q').addEventListener('keydown', e => { if (e.key === 'Enter') { mmPage = 1; loadMembers(); } });
+document.getElementById('mm-prev').onclick = () => { if (mmPage > 1) { mmPage--; loadMembers(); } };
+document.getElementById('mm-next').onclick = () => { mmPage++; loadMembers(); };
+
+// ---- 新增客戶（免註冊）----
+const ncModal = document.getElementById('nc-modal');
+document.getElementById('mm-open-new').onclick = () => {
+  ['nc-name', 'nc-phone', 'nc-points'].forEach(id => document.getElementById(id).value = '');
+  ncModal.style.display = 'flex';
+};
+document.getElementById('nc-cancel').onclick = () => { ncModal.style.display = 'none'; };
+ncModal.addEventListener('click', e => { if (e.target === ncModal) ncModal.style.display = 'none'; });
+document.getElementById('nc-create').onclick = async () => {
+  const name = document.getElementById('nc-name').value.trim();
+  if (!name) return showMsg(msg, '請輸入姓名');
+  try {
+    await API.post('/members', {
+      name,
+      phone: document.getElementById('nc-phone').value.trim(),
+      points: parseInt(document.getElementById('nc-points').value) || 0,
+    });
+    ncModal.style.display = 'none';
+    showMsg(msg, '客戶已建立', true);
+    mmPage = 1;
+    loadMembers();
+  } catch (e) { showMsg(msg, e.message); }
+};
+
+async function openDetail(id) {
+  try {
+    const data = await API.get('/members/' + id);
+    mmDetailId = id;
+    document.getElementById('md-title').textContent = `${data.member.name}（${data.member.account || '免登入'}）`;
+    document.getElementById('md-balance').textContent = data.balance;
+    document.getElementById('md-tx').innerHTML = data.transactions.map(t => `
+      <tr>
+        <td>${fmtDate(t.created_at)}</td>
+        <td>${txTypeName(t.type)}</td>
+        <td>${t.type === 'earn' ? '$' + t.amount : '—'}</td>
+        <td class="${t.points > 0 ? 'pts-pos' : 'pts-neg'}">${t.points > 0 ? '+' : ''}${t.points}</td>
+        <td>${t.operator_name || '—'}</td>
+        <td>${t.note || ''}</td>
+      </tr>`).join('');
+    document.getElementById('mm-detail').style.display = 'block';
+    document.getElementById('mm-detail').scrollIntoView({ behavior: 'smooth' });
+  } catch (e) { showMsg(msg, e.message); }
+}
+
+document.getElementById('md-adjust').onclick = async () => {
+  const points = parseInt(document.getElementById('md-points').value);
+  if (!points) return showMsg(msg, '請輸入非零點數');
+  if (!confirm(`確定${points > 0 ? '補' : '扣'} ${Math.abs(points)} 點？`)) return;
+  try {
+    const data = await API.post('/points/adjust', {
+      user_id: mmDetailId, points,
+      note: document.getElementById('md-note').value,
+    });
+    showMsg(msg, `調整完成，餘額 ${data.balance} 點`, true);
+    document.getElementById('md-points').value = '';
+    openDetail(mmDetailId);
+  } catch (e) { showMsg(msg, e.message); }
+};
+
+// ---- 規則設定 ----
+async function loadSettings() {
+  try {
+    const s = await API.get('/settings');
+    document.getElementById('s-rate-amount').value = s.rate_amount;
+    document.getElementById('s-rate-points').value = s.rate_points;
+    document.getElementById('s-validity').value = s.validity_months;
+    document.getElementById('s-redeem-value').value = s.redeem_value;
+    updateSettingsPreview();
+  } catch (e) { showMsg(msg, e.message); }
+}
+function updateSettingsPreview() {
+  const a = document.getElementById('s-rate-amount').value;
+  const p = document.getElementById('s-rate-points').value;
+  const v = document.getElementById('s-validity').value;
+  const r = document.getElementById('s-redeem-value').value;
+  document.getElementById('s-preview').innerHTML =
+    `目前規則：每消費 <strong>${a}</strong> 元得 <strong>${p}</strong> 點，效期 <strong>${v}</strong> 個月，1 點折 NT$<strong>${r}</strong>`;
+}
+['s-rate-amount', 's-rate-points', 's-validity', 's-redeem-value'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateSettingsPreview);
+});
+document.getElementById('s-save').onclick = async () => {
+  try {
+    await API.put('/settings', {
+      rate_amount: document.getElementById('s-rate-amount').value,
+      rate_points: document.getElementById('s-rate-points').value,
+      validity_months: document.getElementById('s-validity').value,
+      redeem_value: document.getElementById('s-redeem-value').value,
+    });
+    showMsg(msg, '規則已更新', true);
+  } catch (e) { showMsg(msg, e.message); }
+};
+
+// ---- 統計報表 ----
+async function loadReports(period) {
+  document.getElementById('r-daily').className = 'btn small' + (period === 'daily' ? '' : ' secondary');
+  document.getElementById('r-monthly').className = 'btn small' + (period === 'monthly' ? '' : ' secondary');
+  try {
+    const data = await API.get('/reports?period=' + period);
+    const sum = (k) => data.rows.reduce((acc, r) => acc + (r[k] || 0), 0);
+    document.getElementById('r-stats').innerHTML = `
+      <div class="stat-tile"><div class="v">${data.total_members}</div><div class="k">會員總數</div></div>
+      <div class="stat-tile"><div class="v">$${sum('total_amount')}</div><div class="k">期間消費金額</div></div>
+      <div class="stat-tile"><div class="v">${sum('points_issued')}</div><div class="k">期間發出點數</div></div>
+      <div class="stat-tile"><div class="v">${sum('points_redeemed')}</div><div class="k">期間兌換點數</div></div>`;
+    document.getElementById('r-body').innerHTML = data.rows.map(r => `
+      <tr>
+        <td>${r.period}</td>
+        <td>$${r.total_amount}</td>
+        <td class="pts-pos">${r.points_issued}</td>
+        <td class="pts-neg">${r.points_redeemed}</td>
+        <td>${r.active_members}</td>
+        <td>${r.tx_count}</td>
+      </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">期間內沒有交易</td></tr>';
+  } catch (e) { showMsg(msg, e.message); }
+}
+document.getElementById('r-daily').onclick = () => loadReports('daily');
+document.getElementById('r-monthly').onclick = () => loadReports('monthly');
+
+// ---- 帳號管理（admin） ----
+async function loadStaff() {
+  try {
+    const data = await API.get('/staff');
+    document.getElementById('st-body').innerHTML = data.staff.map(s => `
+      <tr>
+        <td>${s.name}</td>
+        <td>${s.account}</td>
+        <td><span class="badge role">${roleName[s.role] || s.role}</span></td>
+        <td><span class="badge ${s.active ? 'on' : 'off'}">${s.active ? '啟用' : '停用'}</span></td>
+        <td>${s.role === 'admin' ? '—' : `
+          <button class="btn small secondary" data-act="toggle" data-id="${s.id}" data-active="${s.active}">${s.active ? '停用' : '啟用'}</button>
+          <button class="btn small secondary" data-act="pw" data-id="${s.id}">重設密碼</button>`}
+        </td>
+      </tr>`).join('');
+    document.getElementById('st-body').querySelectorAll('button').forEach(b => {
+      b.onclick = async () => {
+        try {
+          if (b.dataset.act === 'toggle') {
+            await API.put('/staff/' + b.dataset.id, { active: b.dataset.active !== '1' });
+          } else {
+            const pw = prompt('輸入新密碼（至少 6 字元）：');
+            if (!pw) return;
+            await API.put('/staff/' + b.dataset.id, { password: pw });
+          }
+          showMsg(msg, '已更新', true);
+          loadStaff();
+        } catch (e) { showMsg(msg, e.message); }
+      };
+    });
+  } catch (e) { showMsg(msg, e.message); }
+}
+const stModal = document.getElementById('st-modal');
+document.getElementById('st-open-modal').onclick = () => {
+  ['st-account', 'st-name', 'st-password'].forEach(id => document.getElementById(id).value = '');
+  stModal.style.display = 'flex';
+};
+document.getElementById('st-cancel').onclick = () => { stModal.style.display = 'none'; };
+stModal.addEventListener('click', e => { if (e.target === stModal) stModal.style.display = 'none'; });
+
+document.getElementById('st-create').onclick = async () => {
+  try {
+    await API.post('/staff', {
+      account: document.getElementById('st-account').value,
+      name: document.getElementById('st-name').value,
+      password: document.getElementById('st-password').value,
+      role: document.getElementById('st-role').value,
+    });
+    stModal.style.display = 'none';
+    showMsg(msg, '帳號已建立', true);
+    loadStaff();
+  } catch (e) { showMsg(msg, e.message); }
+};
+
+loadMembers();
+</script>
+</body>
+</html>

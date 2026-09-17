@@ -1,0 +1,418 @@
+/* 喜翻親子感統遊戲空間 — 會員點數系統 */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --primary: #e07575;
+  --primary-dark: #c45c5c;
+  --primary-light: #f9eded;
+  --accent: #6dba98;
+  --accent-light: #eaf6f0;
+  --warm: #f5c97a;
+  --bg: #fdf8f2;
+  --card: #ffffff;
+  --text: #3d3a38;
+  --muted: #8a8078;
+  --border: #ede6dc;
+  --green: #3aaa6a;
+  --red: #e05050;
+  --shadow: 0 2px 12px rgba(0,0,0,.07);
+  --shadow-lg: 0 4px 24px rgba(0,0,0,.10);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+body {
+  font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.65;
+  min-height: 100vh;
+}
+
+/* ── 容器 ── */
+.container { max-width: 520px; margin: 0 auto; padding: 16px; }
+.container.wide { max-width: 1000px; }
+
+/* ── 頂部導覽 ── */
+header.topbar {
+  background: linear-gradient(135deg, var(--primary) 0%, #d4697b 100%);
+  color: #fff;
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(224,117,117,.25);
+}
+header.topbar .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+header.topbar .brand img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,.5);
+  flex-shrink: 0;
+}
+header.topbar h1 {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+header.topbar h1 small {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 400;
+  opacity: .8;
+}
+header.topbar .user-info {
+  font-size: 0.82rem;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+header.topbar button {
+  background: rgba(255,255,255,.22);
+  border: 1px solid rgba(255,255,255,.35);
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: background .15s;
+}
+header.topbar button:hover { background: rgba(255,255,255,.35); }
+
+/* ── 卡片 ── */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(237,230,220,.6);
+}
+.card h2 {
+  font-size: 1rem;
+  margin-bottom: 14px;
+  color: var(--primary-dark);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── 表單 ── */
+label {
+  display: block;
+  font-size: 0.88rem;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-weight: 500;
+}
+input, select {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  margin-bottom: 12px;
+  background: #fff;
+  color: var(--text);
+  transition: border-color .15s, box-shadow .15s;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(224,117,117,.12);
+}
+.input { /* modal 裡的 input 用 class 方式套 */ }
+
+/* ── 按鈕 ── */
+button.btn {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, transform .08s;
+  letter-spacing: .03em;
+}
+button.btn:hover { background: var(--primary-dark); }
+button.btn:active { transform: scale(.98); }
+button.btn:disabled { background: #d6d3d1; cursor: not-allowed; }
+button.btn.secondary {
+  background: #fff;
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+}
+button.btn.secondary:hover { background: var(--primary-light); }
+button.btn.accent { background: var(--accent); }
+button.btn.accent:hover { background: #5aaa85; }
+button.btn.small { width: auto; padding: 5px 14px; font-size: 0.82rem; font-weight: 600; }
+button.btn.danger { background: var(--red); }
+
+/* ── 訊息提示 ── */
+.msg {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  display: none;
+  border-left: 3px solid;
+}
+.msg.error { background: #fef2f2; color: var(--red); border-color: var(--red); display: block; }
+.msg.success { background: #f0fdf4; color: var(--green); border-color: var(--green); display: block; }
+
+/* ── 餘額顯示 ── */
+.balance-big { text-align: center; padding: 10px 0 6px; }
+.balance-big .num {
+  font-size: 3.2rem;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1.1;
+}
+.balance-big .label { color: var(--muted); font-size: 0.88rem; margin-top: 2px; }
+.expiring-note {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--red);
+  margin-top: 6px;
+  padding: 6px 12px;
+  background: #fef2f2;
+  border-radius: 8px;
+}
+
+/* ── QR Code ── */
+#qrcode { display: flex; justify-content: center; padding: 10px 0; }
+#qrcode img, #qrcode canvas {
+  border: 10px solid #fff;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
+/* ── 表格 ── */
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th, td { padding: 9px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 600; white-space: nowrap; font-size: 0.8rem; }
+tr:last-child td { border-bottom: none; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.pts-pos { color: var(--green); font-weight: 700; }
+.pts-neg { color: var(--red); font-weight: 700; }
+
+/* ── 分頁籤 ── */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button {
+  padding: 9px 18px;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--muted);
+  white-space: nowrap;
+  border-bottom: none;
+  transition: background .15s, color .15s;
+}
+.tabs button:hover { background: var(--primary-light); color: var(--primary); }
+.tabs button.active {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  border-color: var(--primary);
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── 會員卡片 ── */
+.member-card {
+  border: 2px solid var(--primary-light);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+  background: linear-gradient(135deg, #fff 60%, var(--primary-light) 100%);
+  box-shadow: var(--shadow);
+}
+.member-card .name { font-size: 1.15rem; font-weight: 700; }
+.member-card .account { color: var(--muted); font-size: 0.85rem; }
+.member-card .bal {
+  font-size: 1.7rem;
+  color: var(--primary);
+  font-weight: 800;
+  margin-top: 6px;
+}
+
+/* ── 搜尋結果 ── */
+.row { display: flex; gap: 8px; }
+.row > * { flex: 1; }
+.search-result { list-style: none; }
+.search-result li {
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  cursor: pointer;
+  background: #fff;
+  transition: border-color .15s, box-shadow .15s;
+}
+.search-result li:hover {
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(224,117,117,.12);
+}
+.preview-hint { font-size: 0.9rem; color: var(--muted); margin-bottom: 12px; }
+.preview-hint strong { color: var(--primary); font-size: 1.1rem; }
+
+/* ── QR 掃碼 ── */
+#video-wrap { display: none; position: relative; }
+#video-wrap video { width: 100%; border-radius: var(--radius); }
+
+/* ── 徽章 ── */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.badge.on { background: #f0fdf4; color: var(--green); }
+.badge.off { background: #fef2f2; color: var(--red); }
+.badge.role { background: var(--primary-light); color: var(--primary-dark); }
+
+/* ── 登入頁 ── */
+.auth-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 16px;
+  background: linear-gradient(160deg, #fdf8f2 0%, #fdf0f0 100%);
+}
+.auth-logo {
+  margin-bottom: 24px;
+  text-align: center;
+}
+.auth-logo img {
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 50%;
+  box-shadow: 0 4px 20px rgba(224,117,117,.2);
+  border: 4px solid #fff;
+}
+.auth-logo h1 {
+  margin-top: 12px;
+  font-size: 1.4rem;
+  color: var(--primary);
+  font-weight: 800;
+}
+.auth-logo p { color: var(--muted); font-size: 0.88rem; margin-top: 2px; }
+.auth-box { width: 100%; max-width: 420px; }
+.switch-link { text-align: center; margin-top: 12px; font-size: 0.88rem; }
+.switch-link a { color: var(--primary); cursor: pointer; text-decoration: underline; }
+
+/* ── 統計磚塊 ── */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.stat-tile {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 16px 12px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+.stat-tile .v { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
+.stat-tile .k { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+/* ── 登入頁：製作單位署名 ──
+   只放在對外的登入頁；會員／店員／後台是登入後的畫面，放了只是雜訊。
+   壓在 panda 裝飾與社群浮鈕之下的層級，不搶版面。 */
+.site-credit {
+  position: relative;
+  z-index: 1;
+  margin: 28px auto 18px;
+  text-align: center;
+  font-size: .74rem;
+  color: var(--muted);
+}
+.site-credit a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: .18em;
+  opacity: .85;
+}
+.site-credit a:hover { opacity: 1; }
+
+/* ── 登入頁 panda 裝飾 ── */
+.auth-panda {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 180px;
+  opacity: .18;
+  pointer-events: none;
+  user-select: none;
+}
+
+.social-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #3a5a40;
+  border-radius: 999px;
+  padding: 10px 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+}
+.social-fab a {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  border-radius: 50%;
+  transition: background .15s;
+}
+.social-fab a:hover { background: rgba(255,255,255,.15); }
+.social-fab svg { width: 20px; height: 20px; }
+
+/* ── Desktop 增強 ── */
+@media (min-width: 640px) {
+  .stat-row { grid-template-columns: repeat(4, 1fr); }
+  .auth-logo img { width: 160px; height: 160px; }
+  .auth-logo h1 { font-size: 1.6rem; }
+  header.topbar { padding: 10px 24px; }
+  header.topbar h1 { font-size: 1.1rem; }
+  header.topbar .brand img { width: 40px; height: 40px; }
+  .auth-panda { width: 260px; opacity: .22; }
+}
+
+@media (min-width: 900px) {
+  .container.wide { padding: 20px 24px; }
+  .tabs button { padding: 10px 22px; font-size: 0.92rem; }
+  .card { padding: 24px; }
+  .auth-panda { width: 320px; }
+}

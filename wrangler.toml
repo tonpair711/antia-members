@@ -1,0 +1,8 @@
+name = "antia-members"
+compatibility_date = "2026-01-01"
+pages_build_output_dir = "public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "antia-members-db"
+database_id = "a464eecc-9eae-4fa9-ba79-e1692fe4605d"

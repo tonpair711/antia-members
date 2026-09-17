@@ -1,0 +1,452 @@
+<title>喜翻親子感統遊戲空間｜會員點數系統使用說明</title>
+<style>
+:root {
+  --primary: #e07575;
+  --primary-dark: #c45c5c;
+  --primary-light: #f9eded;
+  --accent: #6dba98;
+  --accent-light: #eaf6f0;
+  --warm: #f5c97a;
+  --bg: #fdf8f2;
+  --card: #ffffff;
+  --text: #3d3a38;
+  --muted: #8a8078;
+  --border: #ede6dc;
+  --green: #3aaa6a;
+  --red: #e05050;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1a18;
+    --card: #2a2522;
+    --text: #f0ebe4;
+    --muted: #a09890;
+    --border: #3d3530;
+    --primary-light: #3d1f1f;
+    --accent-light: #1a3028;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #fdf8f2; --card: #ffffff; --text: #3d3a38; --muted: #8a8078;
+  --border: #ede6dc; --primary-light: #f9eded; --accent-light: #eaf6f0;
+}
+:root[data-theme="dark"] {
+  --bg: #1e1a18; --card: #2a2522; --text: #f0ebe4; --muted: #a09890;
+  --border: #3d3530; --primary-light: #3d1f1f; --accent-light: #1a3028;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.75;
+  font-size: 15px;
+}
+
+/* header */
+.doc-header {
+  background: linear-gradient(135deg, var(--primary) 0%, #d4697b 100%);
+  color: #fff;
+  padding: 40px 24px 32px;
+  text-align: center;
+}
+.doc-header .logo-circle {
+  width: 72px; height: 72px;
+  background: rgba(255,255,255,.25);
+  border: 3px solid rgba(255,255,255,.5);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 2rem;
+}
+.doc-header h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+.doc-header p { font-size: 0.9rem; opacity: .85; }
+.doc-header .url-badge {
+  display: inline-block;
+  margin-top: 16px;
+  background: rgba(255,255,255,.2);
+  border: 1px solid rgba(255,255,255,.4);
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+
+/* layout */
+.doc-body {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 32px 16px 64px;
+}
+
+/* sections */
+section { margin-bottom: 40px; }
+section h2 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--primary-dark);
+  border-left: 4px solid var(--primary);
+  padding-left: 12px;
+  margin-bottom: 16px;
+  text-wrap: balance;
+}
+section h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 20px 0 10px;
+  color: var(--text);
+}
+
+p { margin-bottom: 10px; color: var(--text); }
+
+/* url highlight */
+.url-highlight {
+  display: inline-block;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: .02em;
+  border: 1.5px solid var(--primary);
+  margin: 6px 0 14px;
+}
+
+/* 權限表 */
+.perm-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1px solid var(--border); }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  min-width: 520px;
+}
+thead { background: var(--primary); color: #fff; }
+thead th { padding: 11px 14px; font-weight: 700; text-align: center; }
+thead th:first-child { text-align: left; }
+tbody tr:nth-child(even) { background: var(--primary-light); }
+tbody tr:nth-child(odd) { background: var(--card); }
+td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+td:first-child { font-weight: 600; color: var(--text); }
+td:not(:first-child) { text-align: center; }
+.check { color: var(--green); font-size: 1.1rem; }
+.cross { color: var(--border); font-size: 1rem; }
+.partial { color: var(--warm); font-size: 1rem; }
+
+/* 角色徽章 */
+.role-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 14px; border-radius: 99px; font-size: 0.82rem; font-weight: 700;
+}
+.badge-member { background: var(--accent-light); color: #2e7a5a; }
+.badge-staff  { background: #fff3e0; color: #b45309; }
+.badge-boss   { background: var(--primary-light); color: var(--primary-dark); }
+.badge-admin  { background: #ede9fe; color: #5b21b6; }
+
+/* 步驟 */
+.steps { list-style: none; counter-reset: step; }
+.steps li {
+  counter-increment: step;
+  display: flex; gap: 14px;
+  margin-bottom: 14px;
+  align-items: flex-start;
+}
+.steps li::before {
+  content: counter(step);
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.82rem; font-weight: 800;
+  margin-top: 1px;
+}
+.steps li .step-text { flex: 1; }
+.steps li .step-text strong { color: var(--primary-dark); }
+
+/* 提示框 */
+.tip {
+  background: var(--accent-light);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  margin: 12px 0;
+  color: var(--text);
+}
+.warn {
+  background: #fff8ed;
+  border-left: 3px solid var(--warm);
+  border-radius: 0 10px 10px 0;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  margin: 12px 0;
+  color: var(--text);
+}
+
+/* 規則卡 */
+.rule-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+.rule-card {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.rule-card .label { font-size: 0.78rem; color: var(--muted); margin-bottom: 2px; }
+.rule-card .value { font-size: 1.2rem; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; }
+
+/* FAQ */
+.faq-item { margin-bottom: 18px; }
+.faq-item .q {
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-bottom: 4px;
+  display: flex; gap: 8px;
+}
+.faq-item .q::before {
+  content: "Q";
+  background: var(--primary);
+  color: #fff;
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 800; flex-shrink: 0; margin-top: 1px;
+}
+.faq-item .a {
+  color: var(--text);
+  padding-left: 30px;
+  font-size: 0.92rem;
+}
+
+/* footer */
+.doc-footer {
+  text-align: center;
+  padding: 24px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+}
+
+@media (min-width: 600px) {
+  .doc-header { padding: 52px 32px 40px; }
+  .doc-header h1 { font-size: 1.8rem; }
+  .doc-body { padding: 40px 32px 80px; }
+  section h2 { font-size: 1.2rem; }
+}
+</style>
+
+<div class="doc-header">
+  <div class="logo-circle">🐼</div>
+  <h1>喜翻親子感統遊戲空間</h1>
+  <p>會員點數系統｜使用說明書</p>
+  <div class="url-badge">🔗 https://antia-members.pages.dev</div>
+</div>
+
+<div class="doc-body">
+
+  <!-- 登入 -->
+  <section>
+    <h2>一、登入網址</h2>
+    <p>所有角色（會員、店員、老闆、管理員）使用同一個入口：</p>
+    <div class="url-highlight">https://antia-members.pages.dev</div>
+    <p>輸入帳號與密碼後，系統會依角色自動跳轉到對應頁面。</p>
+    <div class="tip">💡 建議將網址加入手機主畫面（加入書籤），方便每次快速開啟。</div>
+  </section>
+
+  <!-- 角色說明 -->
+  <section>
+    <h2>二、帳號角色說明</h2>
+    <div class="role-badges">
+      <span class="badge badge-member">👤 會員</span>
+      <span class="badge badge-staff">🏪 店員</span>
+      <span class="badge badge-boss">👔 老闆</span>
+      <span class="badge badge-admin">🔑 管理員</span>
+    </div>
+    <p>系統共有四種角色，權限由低到高依序為：<strong>會員 → 店員 → 老闆 → 管理員</strong>。</p>
+    <p><strong>老闆</strong>擁有店員的所有功能，另外多了管理後台（會員管理、規則設定、統計報表）。<br>
+    <strong>管理員</strong>擁有老闆的所有功能，另外多了帳號管理（新增/停用店員、老闆及管理員帳號）。</p>
+  </section>
+
+  <!-- 權限對照表 -->
+  <section>
+    <h2>三、各角色權限對照表</h2>
+    <div class="perm-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>功能</th>
+            <th>會員</th>
+            <th>店員</th>
+            <th>老闆</th>
+            <th>管理員</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>登入系統</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td></tr>
+          <tr><td>查看個人點數餘額</td><td class="check">✔</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td></tr>
+          <tr><td>顯示會員 QR Code</td><td class="check">✔</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td></tr>
+          <tr><td>查看個人點數明細</td><td class="check">✔</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td></tr>
+          <tr><td>修改自己的密碼</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td></tr>
+          <tr><td>搜尋會員（手機/姓名/Email）</td><td class="cross">—</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td></tr>
+          <tr><td>掃描會員 QR Code</td><td class="cross">—</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td></tr>
+          <tr><td>幫會員消費累點</td><td class="cross">—</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td></tr>
+          <tr><td>幫會員扣點兌換折抵</td><td class="cross">—</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td></tr>
+          <tr><td>查看所有會員列表</td><td class="cross">—</td><td class="cross">—</td><td class="check">✔</td><td class="check">✔</td></tr>
+          <tr><td>手動補點／扣點（管理調整）</td><td class="cross">—</td><td class="cross">—</td><td class="check">✔</td><td class="check">✔</td></tr>
+          <tr><td>修改點數規則</td><td class="cross">—</td><td class="cross">—</td><td class="check">✔</td><td class="check">✔</td></tr>
+          <tr><td>查看每日／每月統計報表</td><td class="cross">—</td><td class="cross">—</td><td class="check">✔</td><td class="check">✔</td></tr>
+          <tr><td>新增店員／老闆帳號</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td><td class="check">✔</td></tr>
+          <tr><td>新增管理員帳號</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td><td class="check">✔</td></tr>
+          <tr><td>停用／啟用帳號</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td><td class="check">✔</td></tr>
+          <tr><td>重設其他人密碼</td><td class="cross">—</td><td class="cross">—</td><td class="cross">—</td><td class="check">✔</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 點數規則 -->
+  <section>
+    <h2>四、點數規則（預設值）</h2>
+    <div class="rule-grid">
+      <div class="rule-card"><div class="label">消費金額</div><div class="value">每 100 元</div></div>
+      <div class="rule-card"><div class="label">獲得點數</div><div class="value">10 點</div></div>
+      <div class="rule-card"><div class="label">點數有效期</div><div class="value">6 個月</div></div>
+      <div class="rule-card"><div class="label">1 點折抵</div><div class="value">NT$1</div></div>
+    </div>
+    <div class="tip" style="margin-top:14px">💡 老闆可在「管理後台 → 規則設定」隨時調整，修改後只影響之後的新交易，已發出的點數不受影響。</div>
+  </section>
+
+  <!-- 店員操作 -->
+  <section>
+    <h2>五、店員日常操作</h2>
+
+    <h3>▸ 找到會員</h3>
+    <ol class="steps">
+      <li><div class="step-text">登入後自動進入<strong>店員作業</strong>頁面</div></li>
+      <li><div class="step-text">方法一：在搜尋框輸入會員的<strong>手機號碼、Email 或姓名</strong>，按搜尋</div></li>
+      <li><div class="step-text">方法二：按<strong>「掃描 QR Code」</strong>開啟相機，對準會員手機畫面上的 QR Code 掃描</div></li>
+      <li><div class="step-text">點選搜尋結果中的會員，顯示會員卡（姓名、帳號、目前點數餘額）</div></li>
+    </ol>
+
+    <h3>▸ 消費累點</h3>
+    <ol class="steps">
+      <li><div class="step-text">找到會員後，在<strong>「消費累點」</strong>欄位輸入本次消費金額（元）</div></li>
+      <li><div class="step-text">系統自動預覽「此次可得 X 點」</div></li>
+      <li><div class="step-text">確認無誤後按<strong>「加點」</strong></div></li>
+    </ol>
+    <div class="tip">💡 點數計算依當前規則自動換算，不需手動計算。</div>
+
+    <h3>▸ 扣點兌換折抵</h3>
+    <ol class="steps">
+      <li><div class="step-text">找到會員後，在<strong>「扣點兌換」</strong>欄位輸入要扣的點數</div></li>
+      <li><div class="step-text">系統自動預覽「折抵金額 NT$X」</div></li>
+      <li><div class="step-text">確認後按<strong>「兌換」</strong>，系統自動從最快到期的點數優先扣除</div></li>
+    </ol>
+    <div class="warn">⚠️ 扣點後不可復原，請在會員確認折抵金額後再操作。</div>
+  </section>
+
+  <!-- 老闆後台操作 -->
+  <section>
+    <h2>六、老闆後台操作</h2>
+    <p>老闆登入後點選右上角<strong>「管理後台」</strong>進入後台（或直接登入後跳轉），後台有四個分頁。</p>
+
+    <h3>▸ 會員管理</h3>
+    <ol class="steps">
+      <li><div class="step-text">搜尋欄輸入關鍵字可篩選會員，留空直接按搜尋顯示全部</div></li>
+      <li><div class="step-text">點選<strong>「詳情」</strong>查看該會員的點數餘額與交易明細</div></li>
+      <li><div class="step-text">若需手動補點或扣點，在詳情頁填入點數與備注，按<strong>「調整點數」</strong></div></li>
+    </ol>
+
+    <h3>▸ 規則設定</h3>
+    <ol class="steps">
+      <li><div class="step-text">調整「每消費 X 元得 X 點」的比例</div></li>
+      <li><div class="step-text">調整點數有效期（月數）</div></li>
+      <li><div class="step-text">調整「1 點折抵 NT$X」的折抵比</div></li>
+      <li><div class="step-text">按<strong>「儲存規則」</strong>，頁面上方顯示目前生效規則</div></li>
+    </ol>
+
+    <h3>▸ 統計報表</h3>
+    <ol class="steps">
+      <li><div class="step-text">切換「每日（近 30 天）」或「每月（近 12 月）」</div></li>
+      <li><div class="step-text">上方磚塊顯示：會員總數、期間消費金額、發出點數、兌換點數</div></li>
+      <li><div class="step-text">下方表格列出每個時間段的詳細數字</div></li>
+    </ol>
+  </section>
+
+  <!-- 管理員操作 -->
+  <section>
+    <h2>七、管理員專屬操作</h2>
+    <p>管理員後台多出<strong>「帳號管理」</strong>分頁，用來維護店員、老闆、管理員的帳號。</p>
+
+    <h3>▸ 新增帳號</h3>
+    <ol class="steps">
+      <li><div class="step-text">點選<strong>「＋ 新增帳號」</strong>按鈕，彈出表單</div></li>
+      <li><div class="step-text">填入帳號（建議用手機號碼）、姓名、密碼（至少 6 字元）</div></li>
+      <li><div class="step-text">選擇角色：<strong>店員 / 老闆 / 管理員</strong></div></li>
+      <li><div class="step-text">按<strong>「建立帳號」</strong>完成，通知當事人帳號與初始密碼</div></li>
+    </ol>
+
+    <h3>▸ 停用或重設密碼</h3>
+    <ol class="steps">
+      <li><div class="step-text">在帳號列表找到對應人員</div></li>
+      <li><div class="step-text">按<strong>「停用」</strong>可暫時封鎖該帳號（員工離職時使用）</div></li>
+      <li><div class="step-text">按<strong>「重設密碼」</strong>輸入新密碼（忘記密碼時使用）</div></li>
+    </ol>
+    <div class="tip">💡 管理員自己的帳號無法被停用或刪除，避免意外鎖死系統。</div>
+  </section>
+
+  <!-- 會員端 -->
+  <section>
+    <h2>八、會員端操作（給會員參考）</h2>
+    <ol class="steps">
+      <li><div class="step-text">到 <strong>https://antia-members.pages.dev</strong> 點「立即註冊」建立帳號</div></li>
+      <li><div class="step-text">登入後看到目前點數餘額與 QR Code</div></li>
+      <li><div class="step-text">消費時出示 QR Code 給店員掃描，或報手機號碼讓店員搜尋</div></li>
+      <li><div class="step-text">點數到期前 30 天，頁面上方會出現紅色警示提醒</div></li>
+    </ol>
+  </section>
+
+  <!-- 常見問題 -->
+  <section>
+    <h2>九、常見問題</h2>
+
+    <div class="faq-item">
+      <div class="q">會員忘記密碼怎麼辦？</div>
+      <div class="a">管理員到「帳號管理」找到該帳號，按「重設密碼」設定新密碼，再通知會員。（目前系統無自助重設密碼功能）</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="q">點數算錯，可以撤銷嗎？</div>
+      <div class="a">無法直接撤銷，但老闆可到「會員管理 → 詳情 → 調整點數」手動補扣點來修正，並填寫備注說明原因。</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="q">點數快過期，可以延長嗎？</div>
+      <div class="a">目前不支援延長單筆點數效期。可透過「調整點數」補發新點數（新點數以當前規則計算新的到期日）。</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="q">店員離職，如何停用帳號？</div>
+      <div class="a">管理員到「帳號管理」找到該店員，按「停用」即可。停用後該帳號無法登入，但歷史交易紀錄保留。</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="q">可以同時有多個管理員嗎？</div>
+      <div class="a">可以。管理員可在「帳號管理」新增其他管理員帳號，適合老闆與信任的人共同管理系統。</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="q">會員沒有手機可以用嗎？</div>
+      <div class="a">可以。店員可直接用手機號碼或姓名搜尋會員，不一定要掃 QR Code。</div>
+    </div>
+  </section>
+
+</div>
+
+<div class="doc-footer">
+  喜翻親子感統遊戲空間 · 會員點數系統使用說明 · 2026年7月
+</div>
