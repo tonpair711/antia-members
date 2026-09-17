@@ -624,3 +624,6 @@ header.topbar button.nav-btn:disabled { opacity: .45; }
 @media (max-width: 479px) {
   header.topbar h1 { display: none; }
 }
+
+/* ── 頁尾版本號 ── */
+.app-version { text-align: center; font-size: 0.75rem; color: var(--muted); margin: 18px 0 8px; }
