@@ -75,6 +75,24 @@
           <tbody id="md-tx"></tbody>
         </table>
       </div>
+
+      <hr style="margin:20px 0;border:none;border-top:1px solid var(--border)">
+      <h3 style="margin-bottom:8px">設定登入帳密</h3>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:10px" id="md-login-hint"></p>
+      <div class="row">
+        <div>
+          <label>帳號（手機號碼或 Email）</label>
+          <input type="text" id="md-login-account">
+        </div>
+        <div>
+          <label>密碼（至少 6 個字元）</label>
+          <input type="password" id="md-login-password">
+        </div>
+      </div>
+      <button class="btn small" id="md-login-save">儲存登入帳密</button>
+
+      <hr style="margin:20px 0;border:none;border-top:1px solid var(--border)">
+      <button class="btn small danger" id="md-delete">刪除此客戶</button>
     </div>
   </div>
 
@@ -290,6 +308,11 @@ async function openDetail(id) {
         <td>${t.operator_name || '—'}</td>
         <td>${t.note || ''}</td>
       </tr>`).join('');
+    document.getElementById('md-login-hint').textContent = data.member.account
+      ? `目前登入帳號：${data.member.account}（下面可以重設密碼，或改成新帳號）`
+      : '目前免登入（客戶不能自己看餘額），下面可以幫他開通登入';
+    document.getElementById('md-login-account').value = data.member.account || '';
+    document.getElementById('md-login-password').value = '';
     document.getElementById('mm-detail').style.display = 'block';
     document.getElementById('mm-detail').scrollIntoView({ behavior: 'smooth' });
   } catch (e) { showMsg(msg, e.message); }
@@ -307,6 +330,30 @@ document.getElementById('md-adjust').onclick = async () => {
     showMsg(msg, `調整完成，餘額 ${data.balance} 點`, true);
     document.getElementById('md-points').value = '';
     openDetail(mmDetailId);
+  } catch (e) { showMsg(msg, e.message); }
+};
+
+document.getElementById('md-login-save').onclick = async () => {
+  const account = document.getElementById('md-login-account').value.trim();
+  const password = document.getElementById('md-login-password').value;
+  if (!account || !password) return showMsg(msg, '請輸入帳號與密碼');
+  try {
+    await API.put('/members/' + mmDetailId, { account, password });
+    showMsg(msg, '登入帳密已設定', true);
+    openDetail(mmDetailId);
+  } catch (e) { showMsg(msg, e.message); }
+};
+
+document.getElementById('md-delete').onclick = async () => {
+  if (!confirm('確定要刪除這個客戶？點數與交易紀錄會一併清除，無法復原。')) return;
+  const password = prompt('請輸入你自己的密碼確認刪除：');
+  if (!password) return;
+  try {
+    await API.call('/members/' + mmDetailId, { method: 'DELETE', body: JSON.stringify({ password }) });
+    showMsg(msg, '客戶已刪除', true);
+    document.getElementById('mm-detail').style.display = 'none';
+    mmPage = 1;
+    loadMembers();
   } catch (e) { showMsg(msg, e.message); }
 };
 

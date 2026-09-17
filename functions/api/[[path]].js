@@ -252,6 +252,42 @@ export async function onRequest(context) {
       return json({ member: m, balance, expiring, transactions: txs });
     }
 
+    // 設定/重設會員登入帳密（開通免登入客戶的登入，或重設忘記密碼的會員）
+    if (memberMatch && method === 'PUT') {
+      const denied = requireRole(user, 'staff');
+      if (denied) return denied;
+      const id = parseInt(memberMatch[1]);
+      const b = await request.json();
+      const account = (b.account || '').trim().toLowerCase();
+      if (!validAccount(account)) return err('帳號須為手機號碼（09 開頭 10 碼）或 Email');
+      if ((b.password || '').length < 6) return err('密碼至少 6 個字元');
+      const target = await env.DB.prepare("SELECT id FROM users WHERE id = ? AND role = 'member'").bind(id).first();
+      if (!target) return err('找不到會員', 404);
+      const exists = await env.DB.prepare('SELECT id FROM users WHERE account = ? AND id != ?').bind(account, id).first();
+      if (exists) return err('此帳號已被其他人使用');
+      const salt = hex(crypto.getRandomValues(new Uint8Array(16)));
+      const hash = await pbkdf2(b.password, salt);
+      await env.DB.prepare('UPDATE users SET account = ?, password_hash = ?, salt = ? WHERE id = ?')
+        .bind(account, hash, salt, id).run();
+      return json({ ok: true });
+    }
+
+    // 刪除客戶（要輸入操作者自己的密碼確認，不是客戶密碼）
+    if (memberMatch && method === 'DELETE') {
+      const denied = requireRole(user, 'boss');
+      if (denied) return denied;
+      const id = parseInt(memberMatch[1]);
+      const b = await request.json();
+      const full = await env.DB.prepare('SELECT password_hash, salt FROM users WHERE id = ?').bind(user.id).first();
+      const hash = await pbkdf2(b.password || '', full.salt);
+      if (hash !== full.password_hash) return err('密碼錯誤', 401);
+      const target = await env.DB.prepare("SELECT id FROM users WHERE id = ? AND role = 'member'").bind(id).first();
+      if (!target) return err('找不到會員', 404);
+      await env.DB.prepare('DELETE FROM transactions WHERE user_id = ?').bind(id).run();
+      await env.DB.prepare('DELETE FROM users WHERE id = ?').bind(id).run();
+      return json({ ok: true });
+    }
+
     // 用帳號找會員（掃 QR Code 後查詢）
     if (path === '/members/by-account' && method === 'GET') {
       const denied = requireRole(user, 'staff');
