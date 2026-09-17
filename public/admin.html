@@ -67,6 +67,10 @@
           <label>備註</label>
           <input type="text" id="md-note" placeholder="例：活動補點">
         </div>
+        <div>
+          <label>交易日期（選填，補點才用，預設今天）</label>
+          <input type="date" id="md-date">
+        </div>
       </div>
       <button class="btn" id="md-adjust">確認調整</button>
       <div class="table-wrap" style="margin-top:16px">
@@ -163,7 +167,8 @@
       <h3 style="margin-bottom:16px;color:var(--primary)">新增客戶</h3>
       <label style="display:block;margin-bottom:8px">姓名<input type="text" id="nc-name" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <label style="display:block;margin-bottom:8px">手機（選填）<input type="text" id="nc-phone" class="input" style="display:block;width:100%;margin-top:4px"></label>
-      <label style="display:block;margin-bottom:16px">初始點數（選填）<input type="number" id="nc-points" class="input" min="0" style="display:block;width:100%;margin-top:4px"></label>
+      <label style="display:block;margin-bottom:8px">初始點數（選填）<input type="number" id="nc-points" class="input" min="0" style="display:block;width:100%;margin-top:4px"></label>
+      <label style="display:block;margin-bottom:16px">交易日期（選填，預設今天；例如課程包第一堂實際上課日）<input type="date" id="nc-date" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <div style="display:flex;gap:8px">
         <button class="btn" id="nc-create" style="flex:1">建立客戶</button>
         <button class="btn secondary" id="nc-cancel" style="flex:1">取消</button>
@@ -275,7 +280,7 @@ document.getElementById('mm-next').onclick = () => { mmPage++; loadMembers(); };
 // ---- 新增客戶（免註冊）----
 const ncModal = document.getElementById('nc-modal');
 document.getElementById('mm-open-new').onclick = () => {
-  ['nc-name', 'nc-phone', 'nc-points'].forEach(id => document.getElementById(id).value = '');
+  ['nc-name', 'nc-phone', 'nc-points', 'nc-date'].forEach(id => document.getElementById(id).value = '');
   ncModal.style.display = 'flex';
 };
 document.getElementById('nc-cancel').onclick = () => { ncModal.style.display = 'none'; };
@@ -288,6 +293,7 @@ document.getElementById('nc-create').onclick = async () => {
       name,
       phone: document.getElementById('nc-phone').value.trim(),
       points: parseInt(document.getElementById('nc-points').value) || 0,
+      date: document.getElementById('nc-date').value,
     });
     ncModal.style.display = 'none';
     showMsg(msg, '客戶已建立', true);
@@ -329,9 +335,11 @@ document.getElementById('md-adjust').onclick = async () => {
     const data = await API.post('/points/adjust', {
       user_id: mmDetailId, points,
       note: document.getElementById('md-note').value,
+      date: document.getElementById('md-date').value,
     });
     showMsg(msg, `調整完成，餘額 ${data.balance} 點`, true);
     document.getElementById('md-points').value = '';
+    document.getElementById('md-date').value = '';
     openDetail(mmDetailId);
   } catch (e) { showMsg(msg, e.message); }
 };

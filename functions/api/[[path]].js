@@ -224,10 +224,11 @@ export async function onRequest(context) {
       const userId = result.meta.last_row_id;
       if (points > 0) {
         const s = await getSettings(env);
+        const dateVal = (b.date || '').trim() || 'now';
         await env.DB.prepare(
-          `INSERT INTO transactions (user_id, type, points, remaining, expires_at, operator_id, note)
-           VALUES (?,'adjust',?,?,datetime('now','+${s.validity_months} months'),?,?)`
-        ).bind(userId, points, points, user.id, b.note || '新增客戶').run();
+          `INSERT INTO transactions (user_id, type, points, remaining, expires_at, operator_id, note, created_at)
+           VALUES (?,'adjust',?,?,datetime(?,'+${s.validity_months} months'),?,?,datetime(?))`
+        ).bind(userId, points, points, dateVal, user.id, b.note || '新增客戶', dateVal).run();
       }
       const balance = await getBalance(env, userId);
       return json({ ok: true, id: userId, balance });
@@ -347,10 +348,11 @@ export async function onRequest(context) {
       if (!userId || !points) return err('點數不正確');
       if (points > 0) {
         const s = await getSettings(env);
+        const dateVal = (b.date || '').trim() || 'now';
         await env.DB.prepare(
-          `INSERT INTO transactions (user_id, type, points, remaining, expires_at, operator_id, note)
-           VALUES (?,'adjust',?,?,datetime('now','+${s.validity_months} months'),?,?)`
-        ).bind(userId, points, points, user.id, b.note || '手動補點').run();
+          `INSERT INTO transactions (user_id, type, points, remaining, expires_at, operator_id, note, created_at)
+           VALUES (?,'adjust',?,?,datetime(?,'+${s.validity_months} months'),?,?,datetime(?))`
+        ).bind(userId, points, points, dateVal, user.id, b.note || '手動補點', dateVal).run();
       } else {
         const stmts = await buildDeduction(env, userId, -points);
         if (!stmts) return err('點數餘額不足');
