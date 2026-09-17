@@ -1,4 +1,4 @@
-// antia-members API — Cloudflare Pages Functions (catch-all router)
+// xifun（喜翻會員點數）API — Cloudflare Pages Functions (catch-all router)
 // 認證：HMAC-SHA256 簽章 token（id.exp.sig），密碼 PBKDF2-SHA256
 
 const ROLE_LEVEL = { member: 0, staff: 1, boss: 2, admin: 3 };

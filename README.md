@@ -1,4 +1,7 @@
-# Antia 會員點數系統
+# xifun 喜翻會員點數系統
+
+> 網址 https://xifun.tonpair.com　GitHub tonpair711/xifun　發布用 `publish-tonpair.ps1 -Go`
+> Cloudflare 上的 Pages 專案與 D1 仍叫 antia-members／antia-members-db（建立後改不了名）
 
 單店會員點數系統：消費累點、QR Code 掃碼、店員扣點兌換、老闆後台報表。
 

@@ -1,3 +1,5 @@
+# Cloudflare 上的 Pages 專案與 D1 資料庫建立後改不了名，所以這裡保留舊名 antia-members；
+# 對外網址、資料夾、GitHub repo 都已改叫 xifun（2026-09-17）
 name = "antia-members"
 compatibility_date = "2026-01-01"
 pages_build_output_dir = "public"

@@ -1,4 +1,4 @@
--- antia-members 會員點數系統 D1 schema
+-- xifun 喜翻會員點數系統 D1 schema
 DROP TABLE IF EXISTS transactions;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS settings;
