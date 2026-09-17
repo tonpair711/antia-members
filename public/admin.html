@@ -90,9 +90,6 @@
         </div>
       </div>
       <button class="btn small" id="md-login-save">儲存登入帳密</button>
-
-      <hr style="margin:20px 0;border:none;border-top:1px solid var(--border)">
-      <button class="btn small danger" id="md-delete">刪除此客戶</button>
     </div>
   </div>
 
@@ -250,10 +247,16 @@ async function loadMembers() {
         <td>${m.name}</td>
         <td>${m.account || '免登入'}</td>
         <td>${fmtDateOnly(m.created_at)}</td>
-        <td><button class="btn small" data-id="${m.id}">詳情</button></td>
+        <td style="white-space:nowrap">
+          <button class="btn small" data-id="${m.id}">詳情</button>
+          <button class="btn small danger" data-del-id="${m.id}" data-del-name="${m.name}">刪除</button>
+        </td>
       </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted)">沒有會員</td></tr>';
     document.getElementById('mm-body').querySelectorAll('button[data-id]').forEach(b => {
       b.onclick = () => openDetail(parseInt(b.dataset.id));
+    });
+    document.getElementById('mm-body').querySelectorAll('button[data-del-id]').forEach(b => {
+      b.onclick = () => deleteMember(parseInt(b.dataset.delId), b.dataset.delName);
     });
     document.getElementById('mm-page').textContent = `第 ${mmPage} 頁`;
     document.getElementById('mm-next').disabled = !data.hasMore;
@@ -344,18 +347,17 @@ document.getElementById('md-login-save').onclick = async () => {
   } catch (e) { showMsg(msg, e.message); }
 };
 
-document.getElementById('md-delete').onclick = async () => {
-  if (!confirm('確定要刪除這個客戶？點數與交易紀錄會一併清除，無法復原。')) return;
+async function deleteMember(id, name) {
+  if (!confirm(`確定要刪除「${name}」？點數與交易紀錄會一併清除，無法復原。`)) return;
   const password = prompt('請輸入你自己的密碼確認刪除：');
   if (!password) return;
   try {
-    await API.call('/members/' + mmDetailId, { method: 'DELETE', body: JSON.stringify({ password }) });
+    await API.call('/members/' + id, { method: 'DELETE', body: JSON.stringify({ password }) });
     showMsg(msg, '客戶已刪除', true);
-    document.getElementById('mm-detail').style.display = 'none';
-    mmPage = 1;
+    if (mmDetailId === id) document.getElementById('mm-detail').style.display = 'none';
     loadMembers();
   } catch (e) { showMsg(msg, e.message); }
-};
+}
 
 // ---- 規則設定 ----
 async function loadSettings() {
