@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.8.0">
+<link rel="stylesheet" href="/css/style.css?v=1.9.0">
 </head>
 <body>
 <header class="topbar">
@@ -81,6 +81,19 @@
       </div>
 
       <div class="card">
+        <h2>幫會員加點</h2>
+        <label for="md-points">點數</label>
+        <input type="text" id="md-points" inputmode="numeric" pattern="-?[0-9]*" autocomplete="off" placeholder="例：10">
+        <p class="field-hint">打錯要扣回，填負數即可（例如 -10）</p>
+        <label for="md-date">消費日期時間</label>
+        <input type="datetime-local" id="md-date">
+        <p class="field-hint">預設是現在；補登以前的消費就改這裡</p>
+        <label for="md-note">備註（選填）</label>
+        <input type="text" id="md-note" placeholder="例：感統課一堂">
+        <button class="btn" id="md-adjust">確認加點</button>
+      </div>
+
+      <div class="card">
         <h2>生日</h2>
         <div style="display:flex;gap:8px;align-items:flex-start">
           <input type="date" id="md-birthday" style="flex:1">
@@ -96,19 +109,6 @@
           <button class="btn secondary" id="md-remark-save" style="width:auto;flex-shrink:0">儲存</button>
         </div>
         <p class="field-hint">會員自己用手機號碼註冊時，用這裡記下是誰；列表跟搜尋都看得到</p>
-      </div>
-
-      <div class="card">
-        <h2>幫會員加點</h2>
-        <label for="md-points">點數</label>
-        <input type="text" id="md-points" inputmode="numeric" pattern="-?[0-9]*" autocomplete="off" placeholder="例：10">
-        <p class="field-hint">打錯要扣回，填負數即可（例如 -10）</p>
-        <label for="md-date">消費日期時間</label>
-        <input type="datetime-local" id="md-date">
-        <p class="field-hint">預設是現在；補登以前的消費就改這裡</p>
-        <label for="md-note">備註（選填）</label>
-        <input type="text" id="md-note" placeholder="例：感統課一堂">
-        <button class="btn" id="md-adjust">確認加點</button>
       </div>
 
       <div class="card">
@@ -220,6 +220,28 @@
     </div>
   </div>
 
+  <!-- 通用確認 / 輸入 Modal：取代瀏覽器內建 confirm()／prompt()，手機（尤其是「加到主畫面」的 PWA 模式）常常不會跳出原生對話框，
+       畫面上完全沒反應，改用自己畫的 Modal 桌機/手機都一樣可靠 -->
+  <div id="confirm-modal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
+    <div class="modal-box" style="background:var(--card);border-radius:12px;padding:24px;width:90%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+      <p id="confirm-text" style="margin-bottom:20px;white-space:pre-line"></p>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="confirm-yes" style="flex:1">確定</button>
+        <button class="btn secondary" id="confirm-no" style="flex:1">取消</button>
+      </div>
+    </div>
+  </div>
+  <div id="prompt-modal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
+    <div class="modal-box" style="background:var(--card);border-radius:12px;padding:24px;width:90%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+      <label id="prompt-label" style="display:block;margin-bottom:8px"></label>
+      <input type="text" id="prompt-input" style="display:block;width:100%;margin-bottom:20px">
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="prompt-ok" style="flex:1">確定</button>
+        <button class="btn secondary" id="prompt-cancel" style="flex:1">取消</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 改密碼 Modal -->
   <div id="pw-modal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
     <div class="modal-box" style="background:var(--card);border-radius:12px;padding:24px;width:90%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
@@ -317,7 +339,7 @@
   <p class="app-version" id="app-version"></p>
 </div>
 
-<script src="/js/api.js?v=1.8.0"></script>
+<script src="/js/api.js?v=1.9.0"></script>
 <script>
 // 頁尾版本號：從發布時產生的 /version.txt 讀（來源是專案根目錄 VERSION）
 fetch('/version.txt', { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
@@ -332,6 +354,32 @@ document.getElementById('btn-logout').onclick = () => API.logout();
 document.getElementById('tab-staff-btn').style.display = 'block';
 
 const roleName = { staff: '店員', boss: '老闆', admin: '超級管理員' };
+
+// 取代瀏覽器內建 confirm()：回傳 Promise<boolean>，只能按按鈕決定，點背景沒有用
+const confirmModal = document.getElementById('confirm-modal');
+function askConfirm(text) {
+  document.getElementById('confirm-text').textContent = text;
+  confirmModal.style.display = 'flex';
+  return new Promise(resolve => {
+    document.getElementById('confirm-yes').onclick = () => { confirmModal.style.display = 'none'; resolve(true); };
+    document.getElementById('confirm-no').onclick = () => { confirmModal.style.display = 'none'; resolve(false); };
+  });
+}
+
+// 取代瀏覽器內建 prompt()：回傳 Promise<string|null>（取消或沒輸入是 null）
+const promptModal = document.getElementById('prompt-modal');
+function askPrompt(label, type = 'text') {
+  document.getElementById('prompt-label').textContent = label;
+  const input = document.getElementById('prompt-input');
+  input.type = type;
+  input.value = '';
+  promptModal.style.display = 'flex';
+  input.focus();
+  return new Promise(resolve => {
+    document.getElementById('prompt-ok').onclick = () => { promptModal.style.display = 'none'; resolve(input.value || null); };
+    document.getElementById('prompt-cancel').onclick = () => { promptModal.style.display = 'none'; resolve(null); };
+  });
+}
 
 // 數字欄位改用 type=text+inputmode 避免 iOS QuickType 卡住打不進去（見 api.js 說明）
 sanitizeNumericInput(document.getElementById('md-points'), true);
@@ -499,8 +547,8 @@ document.getElementById('mm-open-new').onclick = () => {
   ncModal.style.display = 'flex';
 };
 document.getElementById('nc-cancel').onclick = () => { ncModal.style.display = 'none'; };
-document.getElementById('nc-clear').onclick = () => {
-  if (!confirm('確定要清除目前打的所有欄位重新填嗎？')) return;
+document.getElementById('nc-clear').onclick = async () => {
+  if (!(await askConfirm('確定要清除目前打的所有欄位重新填嗎？'))) return;
   ['nc-name', 'nc-phone', 'nc-points', 'nc-birthday', 'nc-referrer', 'nc-remark'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('nc-date').value = nowTaipeiInput();
 };
@@ -573,7 +621,7 @@ async function openDetail(id) {
 document.getElementById('md-adjust').onclick = async () => {
   const points = parseInt(document.getElementById('md-points').value);
   if (!points) return showMsg(msg, '請輸入非零點數');
-  if (!confirm(`確定幫「${mmDetailName}」${points > 0 ? '加' : '扣'} ${Math.abs(points)} 點？`)) return;
+  if (!(await askConfirm(`確定幫「${mmDetailName}」${points > 0 ? '加' : '扣'} ${Math.abs(points)} 點？`))) return;
   try {
     const data = await API.post('/points/adjust', {
       user_id: mmDetailId, points,
@@ -854,7 +902,7 @@ async function loadStaff() {
           if (b.dataset.act === 'toggle') {
             await API.put('/staff/' + b.dataset.id, { active: b.dataset.active !== '1' });
           } else {
-            const pw = prompt('輸入新密碼（至少 6 字元）：');
+            const pw = await askPrompt('輸入新密碼（至少 6 字元）：', 'password');
             if (!pw) return;
             await API.put('/staff/' + b.dataset.id, { password: pw });
           }

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>店員作業｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.8.0">
+<link rel="stylesheet" href="/css/style.css?v=1.9.0">
 </head>
 <body>
 <header class="topbar">
@@ -76,6 +76,17 @@
   </div>
 </div>
 
+<!-- 通用確認 Modal：取代瀏覽器內建 confirm()，手機（尤其是「加到主畫面」的 PWA 模式）常常不會跳出原生 confirm -->
+<div id="confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
+  <div class="modal-box" style="background:var(--card);border-radius:12px;padding:24px;width:90%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <p id="confirm-text" style="margin-bottom:20px;white-space:pre-line"></p>
+    <div style="display:flex;gap:8px">
+      <button class="btn" id="confirm-yes" style="flex:1">確定</button>
+      <button class="btn secondary" id="confirm-no" style="flex:1">取消</button>
+    </div>
+  </div>
+</div>
+
 <!-- 改密碼 Modal -->
 <div id="pw-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
   <div class="modal-box" style="background:var(--card);border-radius:12px;padding:24px;width:90%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
@@ -90,7 +101,7 @@
 </div>
 
 <script src="/vendor/jsQR.js"></script>
-<script src="/js/api.js?v=1.8.0"></script>
+<script src="/js/api.js?v=1.9.0"></script>
 <script>
 if (!API.guard(['staff', 'boss', 'admin'])) throw new Error('redirect');
 const msg = document.getElementById('msg');
@@ -104,7 +115,18 @@ document.getElementById('btn-pw').onclick = () => {
   pwModal.style.display = 'flex';
 };
 document.getElementById('pw-cancel').onclick = () => { pwModal.style.display = 'none'; };
-pwModal.addEventListener('click', e => { if (e.target === pwModal) pwModal.style.display = 'none'; });
+
+// 取代瀏覽器內建 confirm()：回傳 Promise<boolean>，只能按按鈕決定，點背景沒有用
+const confirmModal = document.getElementById('confirm-modal');
+function askConfirm(text) {
+  document.getElementById('confirm-text').textContent = text;
+  confirmModal.style.display = 'flex';
+  return new Promise(resolve => {
+    document.getElementById('confirm-yes').onclick = () => { confirmModal.style.display = 'none'; resolve(true); };
+    document.getElementById('confirm-no').onclick = () => { confirmModal.style.display = 'none'; resolve(false); };
+  });
+}
+
 document.getElementById('pw-save').onclick = async () => {
   try {
     await API.post('/me/password', {
@@ -267,7 +289,7 @@ document.getElementById('btn-earn').onclick = async () => {
 document.getElementById('btn-redeem').onclick = async () => {
   const points = parseInt(document.getElementById('redeem-points').value);
   if (!points || points <= 0) return showMsg(msg, '請輸入正確點數');
-  if (!confirm(`確定扣 ${points} 點（折抵 NT$${points * settings.redeem_value}）？`)) return;
+  if (!(await askConfirm(`確定扣 ${points} 點（折抵 NT$${points * settings.redeem_value}）？`))) return;
   try {
     const data = await API.post('/points/redeem', { user_id: currentMember.id, points });
     showMsg(msg, `已扣 ${points} 點，餘額 ${data.balance} 點`, true);
