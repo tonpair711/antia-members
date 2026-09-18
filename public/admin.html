@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.2.0">
+<link rel="stylesheet" href="/css/style.css?v=1.2.1">
 </head>
 <body>
 <header class="topbar">
@@ -138,10 +138,10 @@
         <button class="btn small secondary" id="r-all">全部</button>
         <button class="btn small secondary" id="r-custom">自訂日期</button>
       </div>
-      <div class="row form-row" id="r-custom-range" style="display:none;align-items:flex-end;gap:8px;margin-bottom:12px">
-        <div style="flex:1"><label style="margin-bottom:4px">起始日</label><input type="date" id="r-custom-start" class="input" style="margin-bottom:0"></div>
-        <div style="flex:1"><label style="margin-bottom:4px">結束日</label><input type="date" id="r-custom-end" class="input" style="margin-bottom:0"></div>
-        <button class="btn small" id="r-custom-go" style="width:auto;flex:0 0 auto;padding:11px 16px">查詢</button>
+      <div class="row form-row" id="r-custom-range" style="display:none;gap:8px;margin-bottom:12px">
+        <div style="flex:1"><label style="margin-bottom:4px">起始日</label><input type="date" id="r-custom-start" class="input"></div>
+        <div style="flex:1"><label style="margin-bottom:4px">結束日</label><input type="date" id="r-custom-end" class="input"></div>
+        <div style="flex:1"><label style="margin-bottom:4px">&nbsp;</label><button class="btn" id="r-custom-go">查詢</button></div>
       </div>
       <p class="field-hint" id="r-reset-hint" style="display:none;margin-top:0"></p>
       <div class="xl-wrap">
@@ -253,7 +253,7 @@
   <p class="app-version" id="app-version"></p>
 </div>
 
-<script src="/js/api.js?v=1.2.0"></script>
+<script src="/js/api.js?v=1.2.1"></script>
 <script>
 // 頁尾版本號：從發布時產生的 /version.txt 讀（來源是專案根目錄 VERSION）
 fetch('/version.txt', { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
@@ -588,7 +588,7 @@ async function loadReports(period) {
       </tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--muted)">${data.range_label || ''} 沒有交易</td></tr>`;
     if (period === 'all') {
       hint.style.display = 'block';
-      hint.textContent = data.reset_at && data.reset_at > '1970-01-01'
+      hint.textContent = data.reset_at && data.reset_at !== '1970-01-01 00:00:00'
         ? `統計起算時間：${fmtVisit(data.reset_at)}（上次重置後累計至今）`
         : '統計起算時間：系統啟用至今（還沒重置過）';
     } else {

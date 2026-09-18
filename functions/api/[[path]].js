@@ -326,7 +326,7 @@ export async function onRequest(context) {
         await env.DB.prepare(
           `INSERT INTO transactions (user_id, type, points, remaining, expires_at, operator_id, note, created_at)
            VALUES (?,'adjust',?,?,datetime(?,'+${s.validity_months} months'),?,?,?)`
-        ).bind(userId, points, points, dateVal, user.id, b.note || '新增客戶', dateVal).run();
+        ).bind(userId, points, points, dateVal, user.id, b.note || '新增會員', dateVal).run();
       }
       const balance = await getBalance(env, userId);
       return json({ ok: true, id: userId, balance });
@@ -503,48 +503,35 @@ export async function onRequest(context) {
       const period = ['week', 'month', 'year', 'all', 'custom'].includes(periodParam) ? periodParam : 'today';
       const totalMembers = await env.DB.prepare("SELECT COUNT(*) AS c FROM users WHERE role='member' AND active=1").first();
 
-      if (period === 'all') {
-        // 「全部」不是曆法區間，是從上次重置（或系統啟用）以來的累積總數
-        const resetAt = await getReportResetAt(env);
-        const row = await env.DB.prepare(
-          `SELECT SUM(CASE WHEN type='earn' THEN amount ELSE 0 END) AS total_amount,
-                  SUM(CASE WHEN points > 0 THEN points ELSE 0 END) AS points_issued,
-                  SUM(CASE WHEN points < 0 THEN -points ELSE 0 END) AS points_redeemed,
-                  COUNT(DISTINCT user_id) AS active_members,
-                  COUNT(*) AS tx_count
-           FROM transactions WHERE created_at > ?`
-        ).bind(resetAt).first();
-        const rows = row.tx_count ? [{
-          period: '全部',
-          total_amount: row.total_amount || 0,
-          points_issued: row.points_issued || 0,
-          points_redeemed: row.points_redeemed || 0,
-          active_members: row.active_members || 0,
-          tx_count: row.tx_count || 0,
-        }] : [];
-        return json({ period, rows, total_members: totalMembers.c, reset_at: resetAt });
-      }
-
-      // 當日／本週／本月／本年／自訂：都是台灣時區的曆法整區間，各回一列（不是滾動天數的趨勢表）
-      const range = taipeiRange(period, url.searchParams.get('start'), url.searchParams.get('end'));
-      if (!range) return err('請選擇正確的日期區間（起始日不能晚於結束日）');
-      const row = await env.DB.prepare(
-        `SELECT SUM(CASE WHEN type='earn' THEN amount ELSE 0 END) AS total_amount,
-                SUM(CASE WHEN points > 0 THEN points ELSE 0 END) AS points_issued,
-                SUM(CASE WHEN points < 0 THEN -points ELSE 0 END) AS points_redeemed,
-                COUNT(DISTINCT user_id) AS active_members,
-                COUNT(*) AS tx_count
-         FROM transactions WHERE created_at >= ? AND created_at < ?`
-      ).bind(range.start, range.end).first();
-      const rows = row.tx_count ? [{
-        period: range.label,
+      // 兩種區間（全部＝從重置點起算 / 曆法整區間）算出來的欄位形狀一樣，統一在這裡組成一列
+      const toRow = (row, label) => row.tx_count ? [{
+        period: label,
         total_amount: row.total_amount || 0,
         points_issued: row.points_issued || 0,
         points_redeemed: row.points_redeemed || 0,
         active_members: row.active_members || 0,
         tx_count: row.tx_count || 0,
       }] : [];
-      return json({ period, rows, total_members: totalMembers.c, range_label: range.label });
+      const reportSql = (op) =>
+        `SELECT SUM(CASE WHEN type='earn' THEN amount ELSE 0 END) AS total_amount,
+                SUM(CASE WHEN points > 0 THEN points ELSE 0 END) AS points_issued,
+                SUM(CASE WHEN points < 0 THEN -points ELSE 0 END) AS points_redeemed,
+                COUNT(DISTINCT user_id) AS active_members,
+                COUNT(*) AS tx_count
+         FROM transactions WHERE created_at ${op}`;
+
+      if (period === 'all') {
+        // 「全部」不是曆法區間，是從上次重置（或系統啟用）以來的累積總數
+        const resetAt = await getReportResetAt(env);
+        const row = await env.DB.prepare(reportSql('> ?')).bind(resetAt).first();
+        return json({ period, rows: toRow(row, '全部'), total_members: totalMembers.c, reset_at: resetAt });
+      }
+
+      // 當日／本週／本月／本年／自訂：都是台灣時區的曆法整區間，各回一列（不是滾動天數的趨勢表）
+      const range = taipeiRange(period, url.searchParams.get('start'), url.searchParams.get('end'));
+      if (!range) return err('請選擇正確的日期區間（起始日不能晚於結束日）');
+      const row = await env.DB.prepare(reportSql('>= ? AND created_at < ?')).bind(range.start, range.end).first();
+      return json({ period, rows: toRow(row, range.label), total_members: totalMembers.c, range_label: range.label });
     }
 
     // 重置「全部」統計的起算時間；只是換基準點，不刪除任何會員點數或交易紀錄
@@ -619,6 +606,8 @@ export async function onRequest(context) {
     return err('找不到此 API', 404);
   } catch (e) {
     if (e instanceof SyntaxError) return err('請求格式錯誤');
-    return err('伺服器錯誤：' + e.message, 500);
+    // 不把內部錯誤訊息（SQL 錯誤、堆疊）回給前端；細節只留在 Cloudflare 的即時日誌（wrangler tail）
+    console.error('API 錯誤：', e);
+    return err('伺服器發生錯誤，請稍後再試', 500);
   }
 }

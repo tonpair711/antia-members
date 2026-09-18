@@ -86,12 +86,19 @@ function txTypeName(t) {
 // 不讓瀏覽器自己做數字驗證，行為更穩定；allowNegative 給扣點這種可以填負數的欄位用。
 function sanitizeNumericInput(el, allowNegative = false) {
   el.addEventListener('input', () => {
-    let v = allowNegative ? el.value.replace(/[^-0-9]/g, '') : el.value.replace(/[^0-9]/g, '');
+    const before = el.value;
+    const posBefore = el.selectionStart ?? before.length;
+    let v = allowNegative ? before.replace(/[^-0-9]/g, '') : before.replace(/[^0-9]/g, '');
     if (allowNegative) {
       const neg = v.startsWith('-');
       v = (neg ? '-' : '') + v.replace(/-/g, '');
     }
-    if (v !== el.value) el.value = v;
+    if (v === before) return;
+    // 游標前面被砍掉幾個字元，位置就跟著往前退一樣的量，不要整個跳到最後面
+    const removedBeforeCursor = posBefore - before.slice(0, posBefore).replace(allowNegative ? /[^-0-9]/g : /[^0-9]/g, '').length;
+    el.value = v;
+    const pos = Math.max(0, posBefore - removedBeforeCursor);
+    el.setSelectionRange(pos, pos);
   });
 }
 function showMsg(el, text, ok = false) {
