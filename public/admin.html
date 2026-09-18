@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.6.0">
+<link rel="stylesheet" href="/css/style.css?v=1.6.1">
 </head>
 <body>
 <header class="topbar">
@@ -316,7 +316,7 @@
   <p class="app-version" id="app-version"></p>
 </div>
 
-<script src="/js/api.js?v=1.6.0"></script>
+<script src="/js/api.js?v=1.6.1"></script>
 <script>
 // 頁尾版本號：從發布時產生的 /version.txt 讀（來源是專案根目錄 VERSION）
 fetch('/version.txt', { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
@@ -493,10 +493,11 @@ document.getElementById('mm-prev').onclick = () => { if (mmPage > 1) { mmPage--;
 document.getElementById('mm-next').onclick = () => { mmPage++; loadMembers(); };
 
 // ---- 新增會員（免註冊）----
+// 打錯字被擋下、或不小心點到背景關掉 Modal，都不會清空已經打好的欄位；
+// 只有真的建立成功才清空，準備給下一位會員用
 const ncModal = document.getElementById('nc-modal');
 document.getElementById('mm-open-new').onclick = () => {
-  ['nc-name', 'nc-phone', 'nc-points', 'nc-birthday', 'nc-referrer', 'nc-remark'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('nc-date').value = nowTaipeiInput();
+  if (!document.getElementById('nc-date').value) document.getElementById('nc-date').value = nowTaipeiInput();
   ncModal.style.display = 'flex';
 };
 document.getElementById('nc-cancel').onclick = () => { ncModal.style.display = 'none'; };
@@ -515,6 +516,8 @@ document.getElementById('nc-create').onclick = async () => {
       remark: document.getElementById('nc-remark').value.trim(),
     });
     ncModal.style.display = 'none';
+    ['nc-name', 'nc-phone', 'nc-points', 'nc-birthday', 'nc-referrer', 'nc-remark'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('nc-date').value = '';
     showMsg(msg, '會員已建立', true);
     mmPage = 1;
     loadMembers();
@@ -864,7 +867,6 @@ async function loadStaff() {
 }
 const stModal = document.getElementById('st-modal');
 document.getElementById('st-open-modal').onclick = () => {
-  ['st-account', 'st-name', 'st-password'].forEach(id => document.getElementById(id).value = '');
   if (API.role === 'admin') {
     document.getElementById('st-modal-title').textContent = '新增帳號';
     document.getElementById('st-role-field').style.display = 'block';
@@ -889,6 +891,7 @@ document.getElementById('st-create').onclick = async () => {
       role: document.getElementById('st-role').value,
     });
     stModal.style.display = 'none';
+    ['st-account', 'st-name', 'st-password'].forEach(id => document.getElementById(id).value = '');
     showMsg(msg, '帳號已建立', true);
     loadStaff();
   } catch (e) { showMsg(msg, e.message); }
