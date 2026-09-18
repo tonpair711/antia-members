@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>店員作業｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.3.0">
+<link rel="stylesheet" href="/css/style.css?v=1.4.0">
 </head>
 <body>
 <header class="topbar">
@@ -51,6 +51,7 @@
       <h2>消費累點</h2>
       <label>消費金額（元）</label>
       <input type="text" id="earn-amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+      <div class="quick-amounts" id="earn-quick"></div>
       <p class="preview-hint" id="earn-preview">輸入金額自動計算點數</p>
       <button class="btn" id="btn-earn">確認加點</button>
     </div>
@@ -89,7 +90,7 @@
 </div>
 
 <script src="/vendor/jsQR.js"></script>
-<script src="/js/api.js?v=1.3.0"></script>
+<script src="/js/api.js?v=1.4.0"></script>
 <script>
 if (!API.guard(['staff', 'boss', 'admin'])) throw new Error('redirect');
 const msg = document.getElementById('msg');
@@ -120,7 +121,21 @@ sanitizeNumericInput(document.getElementById('redeem-points'), false);
 
 let settings = { rate_amount: 100, rate_points: 10, redeem_value: 1 };
 let currentMember = null;
-API.get('/settings').then(s => { settings = s; }).catch(() => {});
+
+// 常用金額快速按鈕：跟著規則設定的「每消費金額」走（1x/2x/3x/5x），不用每次手動打數字
+function renderQuickAmounts() {
+  const presets = [1, 2, 3, 5].map(n => settings.rate_amount * n);
+  document.getElementById('earn-quick').innerHTML = presets.map(a =>
+    `<button type="button" class="qa-btn" data-amount="${a}">$${a}</button>`).join('');
+  document.getElementById('earn-quick').querySelectorAll('button').forEach(b => {
+    b.onclick = () => {
+      document.getElementById('earn-amount').value = b.dataset.amount;
+      updatePreviews();
+    };
+  });
+}
+renderQuickAmounts();
+API.get('/settings').then(s => { settings = s; renderQuickAmounts(); }).catch(() => {});
 
 // ---- 搜尋 ----
 document.getElementById('btn-search').onclick = doSearch;

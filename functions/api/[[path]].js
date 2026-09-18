@@ -286,7 +286,11 @@ export async function onRequest(context) {
       if (denied) return denied;
       const q = (url.searchParams.get('q') || '').trim();
       const page = Math.max(1, parseInt(url.searchParams.get('page')) || 1);
-      const per = 20;
+      // filter=inactive：久沒來（30 天內沒消費過，或從沒消費過）；filter=expiring：30 天內有點數要到期
+      const filter = url.searchParams.get('filter');
+      // export=1 給匯出用：不分頁，一次全拿（會員數量不大，這規模夠用）
+      const isExport = url.searchParams.get('export') === '1';
+      const per = isExport ? 100000 : 20;
       let where = "role = 'member'";
       let binds = [];
       if (q) {
@@ -294,13 +298,19 @@ export async function onRequest(context) {
         const like = `%${q}%`;
         binds = [like, like, like, like];
       }
+      let having = '';
+      if (filter === 'inactive') having = "WHERE m.last_visit IS NULL OR m.last_visit < datetime('now','-30 days')";
+      else if (filter === 'expiring') having = 'WHERE m.expiring_soon > 0';
       const { results } = await env.DB.prepare(
         // last_visit／visit_count：以「加點」紀錄（points > 0）當作來上課的時間
-        `SELECT u.id, u.account, u.name, u.phone, u.email, u.active, u.created_at,
-                (SELECT MAX(t.created_at) FROM transactions t WHERE t.user_id = u.id AND t.points > 0) AS last_visit,
-                (SELECT COUNT(*) FROM transactions t WHERE t.user_id = u.id AND t.points > 0) AS visit_count,
-                (SELECT COALESCE(SUM(t.remaining),0) FROM transactions t WHERE t.user_id = u.id AND t.remaining > 0 AND t.expires_at > datetime('now')) AS balance
-         FROM users u WHERE ${where} ORDER BY u.id DESC LIMIT ${per + 1} OFFSET ${(page - 1) * per}`
+        `SELECT * FROM (
+           SELECT u.id, u.account, u.name, u.phone, u.email, u.active, u.created_at,
+                  (SELECT MAX(t.created_at) FROM transactions t WHERE t.user_id = u.id AND t.points > 0) AS last_visit,
+                  (SELECT COUNT(*) FROM transactions t WHERE t.user_id = u.id AND t.points > 0) AS visit_count,
+                  (SELECT COALESCE(SUM(t.remaining),0) FROM transactions t WHERE t.user_id = u.id AND t.remaining > 0 AND t.expires_at > datetime('now')) AS balance,
+                  (SELECT COALESCE(SUM(t.remaining),0) FROM transactions t WHERE t.user_id = u.id AND t.remaining > 0 AND t.expires_at > datetime('now') AND t.expires_at <= datetime('now','+30 days')) AS expiring_soon
+           FROM users u WHERE ${where}
+         ) m ${having} ORDER BY m.id DESC LIMIT ${per + 1} OFFSET ${(page - 1) * per}`
       ).bind(...binds).all();
       const hasMore = results.length > per;
       return json({ members: results.slice(0, per), hasMore, page });

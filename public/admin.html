@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.3.0">
+<link rel="stylesheet" href="/css/style.css?v=1.4.0">
 </head>
 <body>
 <header class="topbar">
@@ -42,6 +42,14 @@
           <button type="submit" class="btn small" id="mm-search">搜尋</button>
         </form>
         <button class="btn" id="mm-open-new">＋ 新增會員</button>
+      </div>
+      <div class="toolbar">
+        <select id="mm-filter" class="input" style="margin:0;flex:1">
+          <option value="">全部會員</option>
+          <option value="inactive">久沒來（30 天以上未消費）</option>
+          <option value="expiring">點數即將到期（30 天內）</option>
+        </select>
+        <button class="btn secondary" id="mm-export">⬇ 匯出 Excel</button>
       </div>
       <div class="xl-wrap">
         <table class="xl">
@@ -150,7 +158,10 @@
           <tbody id="r-body"></tbody>
         </table>
       </div>
-      <button class="btn danger-outline small" id="r-reset-btn" style="display:none;margin-top:12px">重置全部統計</button>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn secondary small" id="r-copy">📋 複製摘要</button>
+        <button class="btn danger-outline small" id="r-reset-btn" style="display:none">重置全部統計</button>
+      </div>
     </div>
   </div>
 
@@ -254,7 +265,7 @@
   <p class="app-version" id="app-version"></p>
 </div>
 
-<script src="/js/api.js?v=1.3.0"></script>
+<script src="/js/api.js?v=1.4.0"></script>
 <script>
 // 頁尾版本號：從發布時產生的 /version.txt 讀（來源是專案根目錄 VERSION）
 fetch('/version.txt', { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
@@ -337,8 +348,13 @@ document.getElementById('nav-reload').onclick = () => {
 let mmPage = 1, mmDetailId = null;
 async function loadMembers() {
   const q = document.getElementById('mm-q').value.trim();
+  const filter = document.getElementById('mm-filter').value;
   try {
-    const data = await API.get(`/members?q=${encodeURIComponent(q)}&page=${mmPage}`);
+    const data = await API.get(`/members?q=${encodeURIComponent(q)}&page=${mmPage}${filter ? '&filter=' + filter : ''}`);
+    const emptyMsg = q ? '找不到符合的會員'
+      : filter === 'inactive' ? '目前沒有久沒來的會員'
+      : filter === 'expiring' ? '目前沒有即將到期的點數'
+      : '還沒有會員，按上面「＋ 新增會員」建立第一位';
     document.getElementById('mm-body').innerHTML = data.members.map(m => `
       <tr>
         <td class="sticky"><a class="xl-link" href="#member/${m.id}" title="${esc(m.name)}">${esc(m.name)}</a></td>
@@ -347,7 +363,7 @@ async function loadMembers() {
         <td>${m.last_visit ? fmtVisit(m.last_visit) : '<span class="muted">尚未消費</span>'}</td>
         <td>${esc(m.phone || '')}</td>
         <td><button class="xl-del" data-del-id="${m.id}" data-del-name="${esc(m.name)}">刪除</button></td>
-      </tr>`).join('') || `<tr><td colspan="6" class="empty">${q ? '找不到符合的會員' : '還沒有會員，按上面「＋ 新增會員」建立第一位'}</td></tr>`;
+      </tr>`).join('') || `<tr><td colspan="6" class="empty">${emptyMsg}</td></tr>`;
     document.getElementById('mm-body').querySelectorAll('a.xl-link').forEach(a => {
       a.onclick = () => { navigatedInApp = true; };
     });
@@ -356,6 +372,47 @@ async function loadMembers() {
     document.getElementById('mm-prev').disabled = mmPage <= 1;
   } catch (e) { showMsg(msg, e.message); }
 }
+document.getElementById('mm-filter').onchange = () => { mmPage = 1; loadMembers(); };
+
+// ---- 匯出會員名單成 Excel（.xlsx，中文不會像 CSV 那樣在 Excel 開啟亂碼）----
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) return resolve();
+    const s = document.createElement('script');
+    s.src = src; s.onload = () => resolve(); s.onerror = () => reject(new Error('匯出元件載入失敗，檢查網路後再試一次'));
+    document.head.appendChild(s);
+  });
+}
+document.getElementById('mm-export').onclick = async () => {
+  const btn = document.getElementById('mm-export');
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = '匯出中…';
+  try {
+    await loadScriptOnce('/vendor/xlsx.full.min.js');
+    const filter = document.getElementById('mm-filter').value;
+    const q = document.getElementById('mm-q').value.trim();
+    let page = 1, all = [];
+    while (true) {
+      const data = await API.get(`/members?export=1&q=${encodeURIComponent(q)}&page=${page}${filter ? '&filter=' + filter : ''}`);
+      all = all.concat(data.members);
+      if (!data.hasMore) break;
+      page++;
+    }
+    const rows = all.map(m => ({
+      姓名: m.name,
+      點數: m.balance || 0,
+      消費次數: m.visit_count || 0,
+      最近消費: m.last_visit ? fmtVisit(m.last_visit) : '',
+      手機: m.phone || '',
+      登入帳號: m.account || '免登入',
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '會員名單');
+    XLSX.writeFile(wb, `會員名單_${nowTaipeiInput().slice(0, 10)}.xlsx`);
+  } catch (e) { showMsg(msg, e.message || '匯出失敗'); }
+  btn.disabled = false; btn.textContent = original;
+};
 function showList() {
   mmDetailId = null;
   document.getElementById('mm-detail').style.display = 'none';
@@ -549,6 +606,8 @@ document.getElementById('s-save').onclick = async () => {
 
 // ---- 統計報表：當日／本週／本月／本年都是台灣時區的曆法整區間（各一列），不是滾動天數趨勢表 ----
 const R_TABS = { today: 'r-today', week: 'r-week', month: 'r-month', year: 'r-year', all: 'r-all', custom: 'r-custom' };
+const R_TAB_NAME = { today: '當日', week: '本週', month: '本月', year: '本年', all: '全部', custom: '自訂區間' };
+let lastReport = null; // 給「複製摘要」用
 async function loadReports(period) {
   Object.entries(R_TABS).forEach(([p, id]) => {
     document.getElementById(id).className = 'btn small' + (p === period ? '' : ' secondary');
@@ -595,6 +654,7 @@ async function loadReports(period) {
     } else {
       hint.style.display = 'none';
     }
+    lastReport = { period, data, sum };
   } catch (e) { showMsg(msg, e.message); }
 }
 Object.entries(R_TABS).forEach(([period, id]) => {
@@ -608,6 +668,25 @@ Object.entries(R_TABS).forEach(([period, id]) => {
   };
 });
 document.getElementById('r-custom-go').onclick = () => loadReports('custom');
+
+document.getElementById('r-copy').onclick = async () => {
+  if (!lastReport) return showMsg(msg, '請先選一個期間');
+  const { period, data, sum } = lastReport;
+  const label = data.rows[0]?.period || data.range_label || R_TAB_NAME[period];
+  const text = [
+    `【喜翻親子感統遊戲空間｜${R_TAB_NAME[period]}統計：${label}】`,
+    `會員總數：${data.total_members}`,
+    `消費金額：$${sum('total_amount')}`,
+    `發出點數：${sum('points_issued')}`,
+    `兌換點數：${sum('points_redeemed')}`,
+  ].join('\n');
+  try {
+    await navigator.clipboard.writeText(text);
+    showMsg(msg, '已複製到剪貼簿', true);
+  } catch (e) {
+    showMsg(msg, '複製失敗，瀏覽器不支援或沒有權限');
+  }
+};
 
 const resetModal = document.getElementById('reset-modal');
 document.getElementById('r-reset-btn').onclick = () => {

@@ -276,6 +276,15 @@ tr:last-child td { border-bottom: none; }
 .preview-hint { font-size: 0.9rem; color: var(--muted); margin-bottom: 12px; }
 .preview-hint strong { color: var(--primary); font-size: 1.1rem; }
 
+.quick-amounts { display: flex; flex-wrap: wrap; gap: 8px; margin: -6px 0 12px; }
+.qa-btn {
+  flex: 1 1 auto; min-width: 64px; min-height: 40px; padding: 8px 12px;
+  border: 1.5px solid var(--primary-light); border-radius: var(--radius-sm);
+  background: #fff; color: var(--primary-dark); font-weight: 700; font-size: 0.92rem;
+  cursor: pointer;
+}
+.qa-btn:active { background: var(--primary-light); }
+
 /* ── QR 掃碼 ── */
 #video-wrap { display: none; position: relative; }
 #video-wrap video { width: 100%; border-radius: var(--radius); }
@@ -551,6 +560,7 @@ header.topbar button.nav-btn:disabled { opacity: .45; }
 
   .toolbar { flex-direction: column; }
   .toolbar > .btn { width: 100%; padding: 13px; }
+  .toolbar > select { width: 100%; }
 
   /* 彈窗改從底部滑出 */
   .modal { align-items: flex-end !important; }
