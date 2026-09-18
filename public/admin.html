@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.9.0">
+<link rel="stylesheet" href="/css/style.css?v=1.9.1">
 </head>
 <body>
 <header class="topbar">
@@ -68,6 +68,8 @@
 
     <!-- 會員詳情（手機上整頁換過來，不疊在列表下面） -->
     <div id="mm-detail" style="display:none">
+
+      <button class="btn secondary" id="md-back" style="width:auto;margin-bottom:12px">‹ 返回會員列表</button>
 
       <div class="card profile">
         <div class="p-name" id="md-title"></div>
@@ -339,7 +341,7 @@
   <p class="app-version" id="app-version"></p>
 </div>
 
-<script src="/js/api.js?v=1.9.0"></script>
+<script src="/js/api.js?v=1.9.1"></script>
 <script>
 // 頁尾版本號：從發布時產生的 /version.txt 讀（來源是專案根目錄 VERSION）
 fetch('/version.txt', { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
@@ -524,6 +526,7 @@ document.getElementById('mm-export').onclick = async () => {
   } catch (e) { showMsg(msg, e.message || '匯出失敗'); }
   btn.disabled = false; btn.textContent = original;
 };
+document.getElementById('md-back').onclick = () => go('#members');
 function showList() {
   mmDetailId = null;
   document.getElementById('mm-detail').style.display = 'none';
