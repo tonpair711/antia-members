@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.1.0">
+<link rel="stylesheet" href="/css/style.css?v=1.1.1">
 </head>
 <body>
 <header class="topbar">
@@ -45,7 +45,7 @@
       </div>
       <div class="xl-wrap">
         <table class="xl">
-          <thead><tr><th class="sticky">姓名<div class="th-sub">點選加點</div></th><th class="num">點數</th><th class="num">消費</th><th>最近消費</th><th>手機</th><th></th></tr></thead>
+          <thead><tr><th class="sticky">姓名<div class="th-sub">點選加點</div></th><th class="num">點數</th><th class="num">消費</th><th>最近消費</th><th>手機</th><th>會員刪除</th></tr></thead>
           <tbody id="mm-body"></tbody>
         </table>
       </div>
@@ -247,7 +247,7 @@
   <p class="app-version" id="app-version"></p>
 </div>
 
-<script src="/js/api.js?v=1.1.0"></script>
+<script src="/js/api.js?v=1.1.1"></script>
 <script>
 // 頁尾版本號：從發布時產生的 /version.txt 讀（來源是專案根目錄 VERSION）
 fetch('/version.txt', { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
