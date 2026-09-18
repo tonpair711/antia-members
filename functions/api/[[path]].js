@@ -207,13 +207,15 @@ function validAccount(account) {
   return /^09\d{8}$/.test(account) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account);
 }
 
-// 生日只存 MM-DD（不存年），順便擋掉「13 月」「日期超過當月天數」這種打錯
+// 生日存完整日期 YYYY-MM-DD（含年），順便擋掉「13 月」「日期超過當月天數」這種打錯
 function validBirthday(bd) {
-  const m = bd.match(/^(\d{2})-(\d{2})$/);
+  const m = bd.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!m) return false;
-  const month = +m[1], day = +m[2];
+  const year = +m[1], month = +m[2], day = +m[3];
+  if (year < 1900 || year > new Date().getFullYear()) return false;
   if (month < 1 || month > 12) return false;
-  const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1]; // 2 月用閏年上限 29，容許 2/29
+  const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  const daysInMonth = [31, isLeap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
   return day >= 1 && day <= daysInMonth;
 }
 
@@ -321,7 +323,7 @@ export async function onRequest(context) {
       let having = '';
       if (filter === 'inactive') having = "WHERE m.last_visit IS NULL OR m.last_visit < datetime('now','-30 days')";
       else if (filter === 'expiring') having = 'WHERE m.expiring_soon > 0';
-      else if (filter === 'birthday') having = "WHERE substr(m.birthday,1,2) = strftime('%m','now','+8 hours')";
+      else if (filter === 'birthday') having = "WHERE substr(m.birthday,6,2) = strftime('%m','now','+8 hours')";
       const s = await getSettings(env);
       const { results } = await env.DB.prepare(
         // last_visit／visit_count：以「加點」紀錄（points > 0）當作來上課的時間
@@ -352,7 +354,7 @@ export async function onRequest(context) {
       const birthday = (b.birthday || '').trim();
       const remark = (b.remark || '').trim();
       if (!name) return err('請輸入姓名');
-      if (birthday && !validBirthday(birthday)) return err('生日格式要 MM-DD，例如 03-15，日期要是真的存在的');
+      if (birthday && !validBirthday(birthday)) return err('生日格式要 YYYY-MM-DD，例如 1985-07-15，日期要是真的存在的');
       const s = await getSettings(env);
 
       let referrerId = null;
@@ -421,7 +423,7 @@ export async function onRequest(context) {
       const sets = [], binds = [];
       if (b.birthday !== undefined) {
         const bd = (b.birthday || '').trim();
-        if (bd && !validBirthday(bd)) return err('生日格式要 MM-DD，例如 03-15，日期要是真的存在的');
+        if (bd && !validBirthday(bd)) return err('生日格式要 YYYY-MM-DD，例如 1985-07-15，日期要是真的存在的');
         sets.push('birthday = ?'); binds.push(bd || null);
       }
       if (b.phone !== undefined) {

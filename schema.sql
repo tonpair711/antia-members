@@ -13,7 +13,7 @@ CREATE TABLE users (
   email TEXT DEFAULT '',
   role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('member','staff','boss','admin')),
   active INTEGER NOT NULL DEFAULT 1,
-  birthday TEXT,                          -- MM-DD，選填，只存月日不存年
+  birthday TEXT,                          -- YYYY-MM-DD，選填，存完整生日
   referrer_id INTEGER REFERENCES users(id), -- 介紹人（另一位會員），選填
   note TEXT DEFAULT '',                   -- 會員備註，選填；例如自助註冊的會員是誰、跟誰介紹的
   created_at TEXT NOT NULL DEFAULT (datetime('now'))

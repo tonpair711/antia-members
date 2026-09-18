@@ -101,14 +101,6 @@ function sanitizeNumericInput(el, allowNegative = false) {
     el.setSelectionRange(pos, pos);
   });
 }
-// 生日欄位（MM-DD）：只留數字，超過兩位自動補「-」，打 0315 自動變 03-15
-function sanitizeBirthdayInput(el) {
-  el.addEventListener('input', () => {
-    const digits = el.value.replace(/[^0-9]/g, '').slice(0, 4);
-    const v = digits.length > 2 ? digits.slice(0, 2) + '-' + digits.slice(2) : digits;
-    if (v !== el.value) el.value = v;
-  });
-}
 function showMsg(el, text, ok = false) {
   el.textContent = text;
   el.className = 'msg ' + (ok ? 'success' : 'error');
