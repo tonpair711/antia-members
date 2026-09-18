@@ -88,6 +88,61 @@ function requireRole(user, minRole) {
   return null;
 }
 
+// 把「加了 8 小時的 Date」的 UTC 欄位讀回來，等於讀出台灣的年月日時分秒
+function taipeiYmd(utcDate) {
+  const t = new Date(utcDate.getTime() + 8 * 3600 * 1000);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${t.getUTCFullYear()}-${p(t.getUTCMonth() + 1)}-${p(t.getUTCDate())}`;
+}
+
+// 台灣 y-m-d 00:00 換算成 UTC 的 Date；y/m/d 可以超出範圍（例如 d=32、m=-1），
+// 交給 Date.UTC 自己正規化，月底、跨年都不用特別處理
+function taipeiMidnightUtc(y, m, d) {
+  return new Date(Date.UTC(y, m, d, -8, 0, 0));
+}
+
+// 算「當日／本週／本月／本年／自訂」在台灣時區的曆法整區間，回傳給 SQL 用的 UTC 起訖字串
+// （start 含、end 不含，避開浮點/字串比較的邊界問題）與給畫面看的期間標籤。
+// 本週＝禮拜一 00:00 到禮拜日 23:59:59；自訂要給 startStr/endStr（YYYY-MM-DD），含頭尾兩天整天。
+function taipeiRange(period, startStr, endStr) {
+  const nowTaipei = new Date(Date.now() + 8 * 3600 * 1000); // 拿它的 getUTC* 當「台灣的現在」讀
+  const y = nowTaipei.getUTCFullYear(), m = nowTaipei.getUTCMonth(), day = nowTaipei.getUTCDate();
+  let startUtc, endUtc;
+
+  if (period === 'today') {
+    startUtc = taipeiMidnightUtc(y, m, day);
+    endUtc = taipeiMidnightUtc(y, m, day + 1);
+  } else if (period === 'week') {
+    const dow = nowTaipei.getUTCDay(); // 0=週日
+    const mondayOffset = (dow + 6) % 7; // 週一=0…週日=6
+    startUtc = taipeiMidnightUtc(y, m, day - mondayOffset);
+    endUtc = taipeiMidnightUtc(y, m, day - mondayOffset + 7);
+  } else if (period === 'month') {
+    startUtc = taipeiMidnightUtc(y, m, 1);
+    endUtc = taipeiMidnightUtc(y, m + 1, 1);
+  } else if (period === 'year') {
+    startUtc = taipeiMidnightUtc(y, 0, 1);
+    endUtc = taipeiMidnightUtc(y + 1, 0, 1);
+  } else if (period === 'custom') {
+    const s = (startStr || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const e = (endStr || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!s || !e) return null;
+    startUtc = taipeiMidnightUtc(+s[1], +s[2] - 1, +s[3]);
+    endUtc = taipeiMidnightUtc(+e[1], +e[2] - 1, +e[3] + 1); // 含結束日整天
+    if (endUtc <= startUtc) return null;
+  } else {
+    return null;
+  }
+
+  const fmt = (d) => d.toISOString().slice(0, 19).replace('T', ' ');
+  const label = period === 'week' || period === 'custom'
+    ? `${taipeiYmd(startUtc)} ~ ${taipeiYmd(new Date(endUtc.getTime() - 1))}`
+    : period === 'month' ? taipeiYmd(startUtc).slice(0, 7)
+    : period === 'year' ? taipeiYmd(startUtc).slice(0, 4)
+    : taipeiYmd(startUtc);
+  return { start: fmt(startUtc), end: fmt(endUtc), label };
+}
+
 // 統計報表「全部」的起算時間；沒設過就當系統啟用以來全算
 async function getReportResetAt(env) {
   const row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'report_reset_at'").first();
@@ -445,11 +500,11 @@ export async function onRequest(context) {
       const denied = requireRole(user, 'boss');
       if (denied) return denied;
       const periodParam = url.searchParams.get('period');
-      const period = ['weekly', 'monthly', 'yearly', 'all'].includes(periodParam) ? periodParam : 'daily';
+      const period = ['week', 'month', 'year', 'all', 'custom'].includes(periodParam) ? periodParam : 'today';
       const totalMembers = await env.DB.prepare("SELECT COUNT(*) AS c FROM users WHERE role='member' AND active=1").first();
 
       if (period === 'all') {
-        // 「全部」不是相對區間，是從上次重置（或系統啟用）以來的累積總數
+        // 「全部」不是曆法區間，是從上次重置（或系統啟用）以來的累積總數
         const resetAt = await getReportResetAt(env);
         const row = await env.DB.prepare(
           `SELECT SUM(CASE WHEN type='earn' THEN amount ELSE 0 END) AS total_amount,
@@ -470,21 +525,26 @@ export async function onRequest(context) {
         return json({ period, rows, total_members: totalMembers.c, reset_at: resetAt });
       }
 
-      // 以台灣時區 (+8) 分組
-      const fmt = period === 'yearly' ? '%Y' : period === 'monthly' ? '%Y-%m' : period === 'weekly' ? '%Y-W%W' : '%Y-%m-%d';
-      const range = period === 'yearly' ? '-5 years' : period === 'monthly' ? '-12 months' : period === 'weekly' ? '-84 days' : '-30 days';
-      const { results } = await env.DB.prepare(
-        `SELECT strftime('${fmt}', created_at, '+8 hours') AS period,
-                SUM(CASE WHEN type='earn' THEN amount ELSE 0 END) AS total_amount,
+      // 當日／本週／本月／本年／自訂：都是台灣時區的曆法整區間，各回一列（不是滾動天數的趨勢表）
+      const range = taipeiRange(period, url.searchParams.get('start'), url.searchParams.get('end'));
+      if (!range) return err('請選擇正確的日期區間（起始日不能晚於結束日）');
+      const row = await env.DB.prepare(
+        `SELECT SUM(CASE WHEN type='earn' THEN amount ELSE 0 END) AS total_amount,
                 SUM(CASE WHEN points > 0 THEN points ELSE 0 END) AS points_issued,
                 SUM(CASE WHEN points < 0 THEN -points ELSE 0 END) AS points_redeemed,
                 COUNT(DISTINCT user_id) AS active_members,
                 COUNT(*) AS tx_count
-         FROM transactions
-         WHERE created_at > datetime('now', '${range}')
-         GROUP BY period ORDER BY period DESC`
-      ).all();
-      return json({ period, rows: results, total_members: totalMembers.c });
+         FROM transactions WHERE created_at >= ? AND created_at < ?`
+      ).bind(range.start, range.end).first();
+      const rows = row.tx_count ? [{
+        period: range.label,
+        total_amount: row.total_amount || 0,
+        points_issued: row.points_issued || 0,
+        points_redeemed: row.points_redeemed || 0,
+        active_members: row.active_members || 0,
+        tx_count: row.tx_count || 0,
+      }] : [];
+      return json({ period, rows, total_members: totalMembers.c, range_label: range.label });
     }
 
     // 重置「全部」統計的起算時間；只是換基準點，不刪除任何會員點數或交易紀錄

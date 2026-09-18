@@ -81,6 +81,19 @@ function fmtDateOnly(s) {
 function txTypeName(t) {
   return { earn: '消費累點', redeem: '兌換扣點', adjust: '手動調整' }[t] || t;
 }
+// iOS Safari 有時候會在 type=number 的欄位上被系統的「插入驗證碼」QuickType 提示列卡住，
+// 導致鍵盤打得出來但完全打不進欄位。改用 type=text + inputmode=numeric 搭配這個即時過濾，
+// 不讓瀏覽器自己做數字驗證，行為更穩定；allowNegative 給扣點這種可以填負數的欄位用。
+function sanitizeNumericInput(el, allowNegative = false) {
+  el.addEventListener('input', () => {
+    let v = allowNegative ? el.value.replace(/[^-0-9]/g, '') : el.value.replace(/[^0-9]/g, '');
+    if (allowNegative) {
+      const neg = v.startsWith('-');
+      v = (neg ? '-' : '') + v.replace(/-/g, '');
+    }
+    if (v !== el.value) el.value = v;
+  });
+}
 function showMsg(el, text, ok = false) {
   el.textContent = text;
   el.className = 'msg ' + (ok ? 'success' : 'error');

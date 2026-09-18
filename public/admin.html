@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.1.1">
+<link rel="stylesheet" href="/css/style.css?v=1.2.0">
 </head>
 <body>
 <header class="topbar">
@@ -73,7 +73,7 @@
       <div class="card">
         <h2>幫會員加點</h2>
         <label for="md-points">點數</label>
-        <input type="number" id="md-points" inputmode="numeric" placeholder="例：10">
+        <input type="text" id="md-points" inputmode="numeric" pattern="-?[0-9]*" autocomplete="off" placeholder="例：10">
         <p class="field-hint">打錯要扣回，填負數即可（例如 -10）</p>
         <label for="md-date">消費日期時間</label>
         <input type="datetime-local" id="md-date">
@@ -113,12 +113,12 @@
     <div class="card">
       <h2>點數規則</h2>
       <div class="row form-row">
-        <div><label>每消費金額（元）</label><input type="number" id="s-rate-amount" min="1"></div>
-        <div><label>可得點數</label><input type="number" id="s-rate-points" min="1"></div>
+        <div><label>每消費金額（元）</label><input type="text" id="s-rate-amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off"></div>
+        <div><label>可得點數</label><input type="text" id="s-rate-points" inputmode="numeric" pattern="[0-9]*" autocomplete="off"></div>
       </div>
       <div class="row form-row">
-        <div><label>點數有效期（月）</label><input type="number" id="s-validity" min="1"></div>
-        <div><label>1 點折抵金額（元）</label><input type="number" id="s-redeem-value" min="1"></div>
+        <div><label>點數有效期（月）</label><input type="text" id="s-validity" inputmode="numeric" pattern="[0-9]*" autocomplete="off"></div>
+        <div><label>1 點折抵金額（元）</label><input type="text" id="s-redeem-value" inputmode="numeric" pattern="[0-9]*" autocomplete="off"></div>
       </div>
       <p class="preview-hint" id="s-preview"></p>
       <button class="btn" id="s-save">儲存規則</button>
@@ -131,11 +131,17 @@
     <div class="stat-row" id="r-stats"></div>
     <div class="card">
       <div class="seg-btns">
-        <button class="btn small" id="r-daily">當日（近 30 天）</button>
-        <button class="btn small secondary" id="r-weekly">週（近 12 週）</button>
-        <button class="btn small secondary" id="r-monthly">月（近 12 月）</button>
-        <button class="btn small secondary" id="r-yearly">年（近 5 年）</button>
+        <button class="btn small" id="r-today">當日</button>
+        <button class="btn small secondary" id="r-week">本週</button>
+        <button class="btn small secondary" id="r-month">本月</button>
+        <button class="btn small secondary" id="r-year">本年</button>
         <button class="btn small secondary" id="r-all">全部</button>
+        <button class="btn small secondary" id="r-custom">自訂日期</button>
+      </div>
+      <div class="row form-row" id="r-custom-range" style="display:none;align-items:flex-end;gap:8px;margin-bottom:12px">
+        <div style="flex:1"><label style="margin-bottom:4px">起始日</label><input type="date" id="r-custom-start" class="input" style="margin-bottom:0"></div>
+        <div style="flex:1"><label style="margin-bottom:4px">結束日</label><input type="date" id="r-custom-end" class="input" style="margin-bottom:0"></div>
+        <button class="btn small" id="r-custom-go" style="width:auto;flex:0 0 auto;padding:11px 16px">查詢</button>
       </div>
       <p class="field-hint" id="r-reset-hint" style="display:none;margin-top:0"></p>
       <div class="xl-wrap">
@@ -183,7 +189,7 @@
       <h3 style="margin-bottom:16px;color:var(--primary)">新增會員</h3>
       <label style="display:block;margin-bottom:8px">姓名<input type="text" id="nc-name" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <label style="display:block;margin-bottom:8px">手機（選填）<input type="tel" inputmode="tel" id="nc-phone" class="input" style="display:block;width:100%;margin-top:4px"></label>
-      <label style="display:block;margin-bottom:8px">初始點數（選填）<input type="number" inputmode="numeric" id="nc-points" class="input" min="0" style="display:block;width:100%;margin-top:4px"></label>
+      <label style="display:block;margin-bottom:8px">初始點數（選填）<input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" id="nc-points" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <label style="display:block;margin-bottom:16px">消費日期時間（有初始點數才用，預設現在）<input type="datetime-local" id="nc-date" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <div style="display:flex;gap:8px">
         <button class="btn" id="nc-create" style="flex:1">建立會員</button>
@@ -247,7 +253,7 @@
   <p class="app-version" id="app-version"></p>
 </div>
 
-<script src="/js/api.js?v=1.1.1"></script>
+<script src="/js/api.js?v=1.2.0"></script>
 <script>
 // 頁尾版本號：從發布時產生的 /version.txt 讀（來源是專案根目錄 VERSION）
 fetch('/version.txt', { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
@@ -262,6 +268,14 @@ document.getElementById('btn-logout').onclick = () => API.logout();
 if (API.role === 'admin') document.getElementById('tab-staff-btn').style.display = 'block';
 
 const roleName = { staff: '店員', boss: '老闆', admin: '管理員' };
+
+// 數字欄位改用 type=text+inputmode 避免 iOS QuickType 卡住打不進去（見 api.js 說明）
+sanitizeNumericInput(document.getElementById('md-points'), true);
+sanitizeNumericInput(document.getElementById('nc-points'), false);
+sanitizeNumericInput(document.getElementById('s-rate-amount'), false);
+sanitizeNumericInput(document.getElementById('s-rate-points'), false);
+sanitizeNumericInput(document.getElementById('s-validity'), false);
+sanitizeNumericInput(document.getElementById('s-redeem-value'), false);
 
 // ---- 改密碼 ----
 const pwModal = document.getElementById('pw-modal');
@@ -304,7 +318,7 @@ function route() {
   setTab(tab);
   if (tab === 'members') showList();
   if (tab === 'settings') loadSettings();
-  if (tab === 'reports') loadReports('daily');
+  if (tab === 'reports') loadReports('today');
   if (tab === 'staff') loadStaff();
 }
 window.addEventListener('hashchange', route);
@@ -532,16 +546,31 @@ document.getElementById('s-save').onclick = async () => {
   } catch (e) { showMsg(msg, e.message); }
 };
 
-// ---- 統計報表 ----
-const R_TABS = { daily: 'r-daily', weekly: 'r-weekly', monthly: 'r-monthly', yearly: 'r-yearly', all: 'r-all' };
+// ---- 統計報表：當日／本週／本月／本年都是台灣時區的曆法整區間（各一列），不是滾動天數趨勢表 ----
+const R_TABS = { today: 'r-today', week: 'r-week', month: 'r-month', year: 'r-year', all: 'r-all', custom: 'r-custom' };
 async function loadReports(period) {
   Object.entries(R_TABS).forEach(([p, id]) => {
     document.getElementById(id).className = 'btn small' + (p === period ? '' : ' secondary');
   });
   document.getElementById('r-reset-btn').style.display = period === 'all' ? 'inline-block' : 'none';
+  document.getElementById('r-custom-range').style.display = period === 'custom' ? 'flex' : 'none';
   const hint = document.getElementById('r-reset-hint');
+
+  let qs = '/reports?period=' + period;
+  if (period === 'custom') {
+    const s = document.getElementById('r-custom-start').value;
+    const e = document.getElementById('r-custom-end').value;
+    if (!s || !e) {
+      document.getElementById('r-stats').innerHTML = '';
+      document.getElementById('r-body').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted)">請選擇起訖日期後按查詢</td></tr>';
+      hint.style.display = 'none';
+      return;
+    }
+    qs += `&start=${s}&end=${e}`;
+  }
+
   try {
-    const data = await API.get('/reports?period=' + period);
+    const data = await API.get(qs);
     const sum = (k) => data.rows.reduce((acc, r) => acc + (r[k] || 0), 0);
     document.getElementById('r-stats').innerHTML = `
       <div class="stat-tile"><div class="v">${data.total_members}</div><div class="k">會員總數</div></div>
@@ -556,7 +585,7 @@ async function loadReports(period) {
         <td data-label="兌換點數" class="pts-neg">${r.points_redeemed}</td>
         <td data-label="活躍會員">${r.active_members}</td>
         <td data-label="交易筆數">${r.tx_count}</td>
-      </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">期間內沒有交易</td></tr>';
+      </tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--muted)">${data.range_label || ''} 沒有交易</td></tr>`;
     if (period === 'all') {
       hint.style.display = 'block';
       hint.textContent = data.reset_at && data.reset_at > '1970-01-01'
@@ -567,7 +596,17 @@ async function loadReports(period) {
     }
   } catch (e) { showMsg(msg, e.message); }
 }
-Object.entries(R_TABS).forEach(([period, id]) => { document.getElementById(id).onclick = () => loadReports(period); });
+Object.entries(R_TABS).forEach(([period, id]) => {
+  document.getElementById(id).onclick = () => {
+    if (period === 'custom' && !document.getElementById('r-custom-start').value) {
+      const today = nowTaipeiInput().slice(0, 10);
+      document.getElementById('r-custom-start').value = today;
+      document.getElementById('r-custom-end').value = today;
+    }
+    loadReports(period);
+  };
+});
+document.getElementById('r-custom-go').onclick = () => loadReports('custom');
 
 const resetModal = document.getElementById('reset-modal');
 document.getElementById('r-reset-btn').onclick = () => {
