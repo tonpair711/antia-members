@@ -15,6 +15,7 @@ CREATE TABLE users (
   active INTEGER NOT NULL DEFAULT 1,
   birthday TEXT,                          -- MM-DD，選填，只存月日不存年
   referrer_id INTEGER REFERENCES users(id), -- 介紹人（另一位會員），選填
+  note TEXT DEFAULT '',                   -- 會員備註，選填；例如自助註冊的會員是誰、跟誰介紹的
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX idx_users_name ON users(name);

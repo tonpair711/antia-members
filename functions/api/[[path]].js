@@ -314,9 +314,9 @@ export async function onRequest(context) {
       let where = "role = 'member'";
       let binds = [];
       if (q) {
-        where += ' AND (account LIKE ? OR name LIKE ? OR phone LIKE ? OR email LIKE ?)';
+        where += ' AND (account LIKE ? OR name LIKE ? OR phone LIKE ? OR email LIKE ? OR note LIKE ?)';
         const like = `%${q}%`;
-        binds = [like, like, like, like];
+        binds = [like, like, like, like, like];
       }
       let having = '';
       if (filter === 'inactive') having = "WHERE m.last_visit IS NULL OR m.last_visit < datetime('now','-30 days')";
@@ -327,7 +327,7 @@ export async function onRequest(context) {
         // last_visit／visit_count：以「加點」紀錄（points > 0）當作來上課的時間
         // lifetime_points：這輩子拿過的點數（不管過期沒過期、用掉沒用掉），用來算會員分級
         `SELECT * FROM (
-           SELECT u.id, u.account, u.name, u.phone, u.email, u.active, u.created_at, u.birthday,
+           SELECT u.id, u.account, u.name, u.phone, u.email, u.active, u.created_at, u.birthday, u.note AS remark,
                   (SELECT MAX(t.created_at) FROM transactions t WHERE t.user_id = u.id AND t.points > 0) AS last_visit,
                   (SELECT COUNT(*) FROM transactions t WHERE t.user_id = u.id AND t.points > 0) AS visit_count,
                   (SELECT COALESCE(SUM(t.remaining),0) FROM transactions t WHERE t.user_id = u.id AND t.remaining > 0 AND t.expires_at > datetime('now')) AS balance,
@@ -350,6 +350,7 @@ export async function onRequest(context) {
       const phone = (b.phone || '').trim();
       const points = parseInt(b.points) || 0;
       const birthday = (b.birthday || '').trim();
+      const remark = (b.remark || '').trim();
       if (!name) return err('請輸入姓名');
       if (birthday && !validBirthday(birthday)) return err('生日格式要 MM-DD，例如 03-15，日期要是真的存在的');
       const s = await getSettings(env);
@@ -363,8 +364,8 @@ export async function onRequest(context) {
       }
 
       const result = await env.DB.prepare(
-        "INSERT INTO users (account, password_hash, salt, name, phone, email, role, birthday, referrer_id) VALUES (NULL, NULL, NULL, ?, ?, '', 'member', ?, ?)"
-      ).bind(name, phone, birthday || null, referrerId).run();
+        "INSERT INTO users (account, password_hash, salt, name, phone, email, role, birthday, referrer_id, note) VALUES (NULL, NULL, NULL, ?, ?, '', 'member', ?, ?, ?)"
+      ).bind(name, phone, birthday || null, referrerId, remark).run();
       const userId = result.meta.last_row_id;
       if (points > 0) {
         const dateVal = toUtcSql(b.date);
@@ -390,7 +391,7 @@ export async function onRequest(context) {
       if (denied) return denied;
       const id = parseInt(memberMatch[1]);
       const m = await env.DB.prepare(
-        `SELECT u.id, u.account, u.name, u.phone, u.email, u.active, u.created_at, u.birthday, u.referrer_id,
+        `SELECT u.id, u.account, u.name, u.phone, u.email, u.active, u.created_at, u.birthday, u.referrer_id, u.note AS remark,
                 (SELECT name FROM users r WHERE r.id = u.referrer_id) AS referrer_name,
                 (SELECT COUNT(*) FROM users x WHERE x.referrer_id = u.id) AS referral_count,
                 (SELECT COALESCE(SUM(t.points),0) FROM transactions t WHERE t.user_id = u.id AND t.points > 0) AS lifetime_points
@@ -425,6 +426,9 @@ export async function onRequest(context) {
       }
       if (b.phone !== undefined) {
         sets.push('phone = ?'); binds.push((b.phone || '').trim());
+      }
+      if (b.remark !== undefined) {
+        sets.push('note = ?'); binds.push((b.remark || '').trim());
       }
       if (!sets.length) return err('沒有要更新的欄位');
       binds.push(id);

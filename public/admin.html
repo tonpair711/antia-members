@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.5.1">
+<link rel="stylesheet" href="/css/style.css?v=1.6.0">
 </head>
 <body>
 <header class="topbar">
@@ -38,7 +38,7 @@
     <div id="mm-list-view">
       <div class="toolbar">
         <form class="search-box" id="mm-search-form" role="search" onsubmit="return false">
-          <input type="search" id="mm-q" placeholder="搜尋姓名或手機" enterkeyhint="search" autocomplete="off">
+          <input type="search" id="mm-q" placeholder="搜尋姓名、手機或備註" enterkeyhint="search" autocomplete="off">
           <button type="submit" class="btn small" id="mm-search">搜尋</button>
         </form>
         <button class="btn" id="mm-open-new">＋ 新增會員</button>
@@ -54,7 +54,7 @@
       </div>
       <div class="xl-wrap">
         <table class="xl">
-          <thead><tr><th class="sticky">姓名<div class="th-sub">點選加點</div></th><th class="num">點數</th><th class="num">消費</th><th>最近消費</th><th>手機</th><th>會員刪除</th></tr></thead>
+          <thead><tr><th class="sticky">姓名<div class="th-sub">點選加點</div></th><th class="num">點數</th><th class="num">消費</th><th>最近消費</th><th>手機</th><th>備註</th><th>會員刪除</th></tr></thead>
           <tbody id="mm-body"></tbody>
         </table>
       </div>
@@ -87,6 +87,15 @@
           <button class="btn secondary" id="md-birthday-save" style="width:auto;flex-shrink:0">儲存</button>
         </div>
         <p class="field-hint">只存月和日，生日當月列表可以篩「這個月壽星」</p>
+      </div>
+
+      <div class="card">
+        <h2>備註</h2>
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <input type="text" id="md-remark" placeholder="例：自助註冊，之後補問是哪位" style="flex:1">
+          <button class="btn secondary" id="md-remark-save" style="width:auto;flex-shrink:0">儲存</button>
+        </div>
+        <p class="field-hint">會員自己用手機號碼註冊時，用這裡記下是誰；列表跟搜尋都看得到</p>
       </div>
 
       <div class="card">
@@ -233,8 +242,11 @@
       <label style="display:block;margin-bottom:8px">初始點數（選填）<input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" id="nc-points" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <label style="display:block;margin-bottom:8px">消費日期時間（有初始點數才用，預設現在）<input type="datetime-local" id="nc-date" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <label style="display:block;margin-bottom:8px">生日（選填，MM-DD）<input type="text" id="nc-birthday" class="input" placeholder="例：03-15" maxlength="5" style="display:block;width:100%;margin-top:4px"></label>
-      <label style="display:block;margin-bottom:16px">介紹人手機（選填）<input type="tel" inputmode="tel" id="nc-referrer" class="input" placeholder="輸入介紹人的手機號碼" style="display:block;width:100%;margin-top:4px">
+      <label style="display:block;margin-bottom:8px">介紹人手機（選填）<input type="tel" inputmode="tel" id="nc-referrer" class="input" placeholder="輸入介紹人的手機號碼" style="display:block;width:100%;margin-top:4px">
         <span class="field-hint" style="margin:4px 0 0">找得到才會給介紹人加分（見規則設定）</span>
+      </label>
+      <label style="display:block;margin-bottom:16px">備註（選填）<input type="text" id="nc-remark" class="input" placeholder="例：李太太介紹的鄰居" style="display:block;width:100%;margin-top:4px">
+        <span class="field-hint" style="margin:4px 0 0">會員自助註冊只留手機時，用這裡記下是誰</span>
       </label>
       <div style="display:flex;gap:8px">
         <button class="btn" id="nc-create" style="flex:1">建立會員</button>
@@ -304,7 +316,7 @@
   <p class="app-version" id="app-version"></p>
 </div>
 
-<script src="/js/api.js?v=1.5.1"></script>
+<script src="/js/api.js?v=1.6.0"></script>
 <script>
 // 頁尾版本號：從發布時產生的 /version.txt 讀（來源是專案根目錄 VERSION）
 fetch('/version.txt', { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
@@ -412,8 +424,9 @@ async function loadMembers() {
         <td class="num">${m.visit_count || 0} 次</td>
         <td>${m.last_visit ? fmtVisit(m.last_visit) : '<span class="muted">尚未消費</span>'}</td>
         <td>${esc(m.phone || '')}</td>
+        <td>${esc(m.remark || '')}</td>
         <td><button class="xl-del" data-del-id="${m.id}" data-del-name="${esc(m.name)}">刪除</button></td>
-      </tr>`).join('') || `<tr><td colspan="6" class="empty">${emptyMsg}</td></tr>`;
+      </tr>`).join('') || `<tr><td colspan="7" class="empty">${emptyMsg}</td></tr>`;
     document.getElementById('mm-body').querySelectorAll('a.xl-link').forEach(a => {
       a.onclick = () => { navigatedInApp = true; };
     });
@@ -454,12 +467,14 @@ document.getElementById('mm-export').onclick = async () => {
       消費次數: m.visit_count || 0,
       最近消費: m.last_visit ? fmtVisit(m.last_visit) : '',
       手機: m.phone || '',
+      備註: m.remark || '',
       登入帳號: m.account || '免登入',
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, '會員名單');
     XLSX.writeFile(wb, `會員名單_${nowTaipeiInput().slice(0, 10)}.xlsx`);
+    showMsg(msg, `已匯出 ${all.length} 位會員`, true);
   } catch (e) { showMsg(msg, e.message || '匯出失敗'); }
   btn.disabled = false; btn.textContent = original;
 };
@@ -480,7 +495,7 @@ document.getElementById('mm-next').onclick = () => { mmPage++; loadMembers(); };
 // ---- 新增會員（免註冊）----
 const ncModal = document.getElementById('nc-modal');
 document.getElementById('mm-open-new').onclick = () => {
-  ['nc-name', 'nc-phone', 'nc-points', 'nc-birthday', 'nc-referrer'].forEach(id => document.getElementById(id).value = '');
+  ['nc-name', 'nc-phone', 'nc-points', 'nc-birthday', 'nc-referrer', 'nc-remark'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('nc-date').value = nowTaipeiInput();
   ncModal.style.display = 'flex';
 };
@@ -497,6 +512,7 @@ document.getElementById('nc-create').onclick = async () => {
       date: document.getElementById('nc-date').value,
       birthday: document.getElementById('nc-birthday').value.trim(),
       referrer_phone: document.getElementById('nc-referrer').value.trim(),
+      remark: document.getElementById('nc-remark').value.trim(),
     });
     ncModal.style.display = 'none';
     showMsg(msg, '會員已建立', true);
@@ -523,6 +539,7 @@ async function openDetail(id) {
       data.member.referral_count ? `已介紹 ${data.member.referral_count} 位好友` : '',
     ].filter(Boolean).join('｜');
     document.getElementById('md-birthday').value = data.member.birthday || '';
+    document.getElementById('md-remark').value = data.member.remark || '';
     document.getElementById('md-tx').innerHTML = data.transactions.map(t => {
       const kind = t.type === 'earn' ? `消費 $${t.amount}` : t.type === 'redeem' ? '兌換扣點' : (t.points > 0 ? '加點' : '扣點');
       return `
@@ -579,6 +596,13 @@ document.getElementById('md-birthday-save').onclick = async () => {
   try {
     await API.put('/members/' + mmDetailId + '/profile', { birthday: document.getElementById('md-birthday').value.trim() });
     showMsg(msg, '生日已更新', true);
+  } catch (e) { showMsg(msg, e.message); }
+};
+
+document.getElementById('md-remark-save').onclick = async () => {
+  try {
+    await API.put('/members/' + mmDetailId + '/profile', { remark: document.getElementById('md-remark').value.trim() });
+    showMsg(msg, '備註已更新', true);
   } catch (e) { showMsg(msg, e.message); }
 };
 

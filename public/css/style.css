@@ -159,13 +159,22 @@ button.btn.small { width: auto; padding: 5px 14px; font-size: 0.82rem; font-weig
 button.btn.danger { background: var(--red); }
 
 /* ── 訊息提示 ── */
+/* position:fixed + z-index 高於 modal（999），不然 modal 開著時錯誤訊息會被蓋住，
+   使用者只會看到「按了沒反應」而看不到實際的錯誤原因 */
 .msg {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 480px;
   padding: 10px 14px;
   border-radius: var(--radius-sm);
-  margin-bottom: 12px;
   font-size: 0.9rem;
   display: none;
   border-left: 3px solid;
+  z-index: 2000;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
 }
 .msg.error { background: #fef2f2; color: var(--red); border-color: var(--red); display: block; }
 .msg.success { background: #f0fdf4; color: var(--green); border-color: var(--green); display: block; }
