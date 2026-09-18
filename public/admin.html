@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.9.2">
+<link rel="stylesheet" href="/css/style.css?v=1.10.0">
 </head>
 <body>
 <header class="topbar">
@@ -54,7 +54,7 @@
       </div>
       <div class="xl-wrap">
         <table class="xl">
-          <thead><tr><th class="sticky">姓名<div class="th-sub">點選加點</div></th><th class="num">點數</th><th class="num">消費</th><th>最近消費</th><th>手機</th><th>會員刪除</th></tr></thead>
+          <thead><tr><th class="sticky">姓名<div class="th-sub">點選加點</div></th><th>備註<div class="th-sub">點選修改</div></th><th class="num">點數</th><th class="num">消費</th><th>最近消費</th><th>手機</th><th>會員刪除</th></tr></thead>
           <tbody id="mm-body"></tbody>
         </table>
       </div>
@@ -341,7 +341,7 @@
   <p class="app-version" id="app-version"></p>
 </div>
 
-<script src="/js/api.js?v=1.9.2"></script>
+<script src="/js/api.js?v=1.10.0"></script>
 <script>
 // 頁尾版本號：從發布時產生的 /version.txt 讀（來源是專案根目錄 VERSION）
 fetch('/version.txt', { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
@@ -370,15 +370,15 @@ function askConfirm(text) {
 
 // 取代瀏覽器內建 prompt()：回傳 Promise<string|null>（取消或沒輸入是 null）
 const promptModal = document.getElementById('prompt-modal');
-function askPrompt(label, type = 'text') {
+function askPrompt(label, type = 'text', defaultValue = '') {
   document.getElementById('prompt-label').textContent = label;
   const input = document.getElementById('prompt-input');
   input.type = type;
-  input.value = '';
+  input.value = defaultValue;
   promptModal.style.display = 'flex';
   input.focus();
   return new Promise(resolve => {
-    document.getElementById('prompt-ok').onclick = () => { promptModal.style.display = 'none'; resolve(input.value || null); };
+    document.getElementById('prompt-ok').onclick = () => { promptModal.style.display = 'none'; resolve(input.value); };
     document.getElementById('prompt-cancel').onclick = () => { promptModal.style.display = 'none'; resolve(null); };
   });
 }
@@ -467,15 +467,27 @@ async function loadMembers() {
       : '還沒有會員，按上面「＋ 新增會員」建立第一位';
     document.getElementById('mm-body').innerHTML = data.members.map(m => `
       <tr>
-        <td class="sticky"><a class="xl-link" href="#member/${m.id}" title="${esc(m.name)}">${esc(m.name)}</a>${tierBadge(m.tier)}${m.remark ? `<div class="th-sub" title="${esc(m.remark)}">${esc(m.remark)}</div>` : ''}</td>
+        <td class="sticky"><a class="xl-link" href="#member/${m.id}" title="${esc(m.name)}">${esc(m.name)}</a>${tierBadge(m.tier)}</td>
+        <td><button class="xl-remark" data-remark-id="${m.id}" data-remark-name="${esc(m.name)}" data-remark-value="${esc(m.remark || '')}">${m.remark ? esc(m.remark) : '<span class="muted">＋ 加備註</span>'}</button></td>
         <td class="num"><b>${m.balance || 0}</b></td>
         <td class="num">${m.visit_count || 0} 次</td>
         <td>${m.last_visit ? fmtVisit(m.last_visit) : '<span class="muted">尚未消費</span>'}</td>
         <td>${esc(m.phone || '')}</td>
         <td><button class="xl-del" data-del-id="${m.id}" data-del-name="${esc(m.name)}">刪除</button></td>
-      </tr>`).join('') || `<tr><td colspan="6" class="empty">${emptyMsg}</td></tr>`;
+      </tr>`).join('') || `<tr><td colspan="7" class="empty">${emptyMsg}</td></tr>`;
     document.getElementById('mm-body').querySelectorAll('a.xl-link').forEach(a => {
       a.onclick = () => { navigatedInApp = true; };
+    });
+    document.getElementById('mm-body').querySelectorAll('button.xl-remark').forEach(b => {
+      b.onclick = async () => {
+        const id = parseInt(b.dataset.remarkId);
+        const newRemark = await askPrompt(`「${b.dataset.remarkName}」的備註：`, 'text', b.dataset.remarkValue);
+        if (newRemark === null) return;
+        try {
+          await API.put('/members/' + id + '/profile', { remark: newRemark.trim() });
+          loadMembers();
+        } catch (e) { showMsg(msg, e.message); }
+      };
     });
     document.getElementById('mm-page').textContent = `第 ${mmPage} 頁`;
     document.getElementById('mm-next').disabled = !data.hasMore;
@@ -510,11 +522,11 @@ document.getElementById('mm-export').onclick = async () => {
     }
     const rows = all.map(m => ({
       姓名: m.name,
+      備註: m.remark || '',
       點數: m.balance || 0,
       消費次數: m.visit_count || 0,
       最近消費: m.last_visit ? fmtVisit(m.last_visit) : '',
       手機: m.phone || '',
-      備註: m.remark || '',
       登入帳號: m.account || '免登入',
     }));
     const ws = XLSX.utils.json_to_sheet(rows);

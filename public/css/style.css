@@ -524,6 +524,22 @@ table.xl td.empty { text-align: center; color: var(--muted); padding: 22px 12px;
   min-height: 32px;
   cursor: pointer;
 }
+/* 會員列表的備註：長得像一般文字，但整格可以點，開修改視窗 */
+.xl-remark {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: inherit;
+  text-align: left;
+  padding: 4px 2px;
+  cursor: pointer;
+  max-width: 12em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.xl-remark:hover { text-decoration: underline; }
 .xl-hint { font-size: 0.78rem; color: var(--muted); margin: 6px 2px 0; }
 button.btn.danger-outline { background: #fff; color: var(--red); border: 1.5px solid #f0c9c9; margin: 4px 0 20px; }
 
