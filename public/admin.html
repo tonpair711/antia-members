@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.0.0">
+<link rel="stylesheet" href="/css/style.css?v=1.1.0">
 </head>
 <body>
 <header class="topbar">
@@ -41,15 +41,15 @@
           <input type="search" id="mm-q" placeholder="搜尋姓名或手機" enterkeyhint="search" autocomplete="off">
           <button type="submit" class="btn small" id="mm-search">搜尋</button>
         </form>
-        <button class="btn" id="mm-open-new">＋ 新增客戶</button>
+        <button class="btn" id="mm-open-new">＋ 新增會員</button>
       </div>
       <div class="xl-wrap">
         <table class="xl">
-          <thead><tr><th class="sticky">姓名</th><th class="num">點數</th><th class="num">來訪</th><th>最近來訪</th><th>手機</th><th></th></tr></thead>
+          <thead><tr><th class="sticky">姓名<div class="th-sub">點選加點</div></th><th class="num">點數</th><th class="num">消費</th><th>最近消費</th><th>手機</th><th></th></tr></thead>
           <tbody id="mm-body"></tbody>
         </table>
       </div>
-      <p class="xl-hint">點姓名看詳細紀錄、幫客戶加點；表格太寬可以左右滑</p>
+      <p class="xl-hint">點姓名看詳細紀錄、幫會員加點；表格太寬可以左右滑</p>
       <div class="pager">
         <button class="btn small secondary" id="mm-prev">上一頁</button>
         <span id="mm-page">第 1 頁</span>
@@ -65,13 +65,13 @@
         <div class="p-phone" id="md-phone"></div>
         <div class="p-stats">
           <div class="p-stat"><div class="v" id="md-balance">0</div><div class="k">目前點數</div></div>
-          <div class="p-stat"><div class="v" id="md-count">0</div><div class="k">來訪次數</div></div>
+          <div class="p-stat"><div class="v" id="md-count">0</div><div class="k">消費次數</div></div>
         </div>
         <div class="p-last" id="md-visits"></div>
       </div>
 
       <div class="card">
-        <h2>幫客戶加點</h2>
+        <h2>幫會員加點</h2>
         <label for="md-points">點數</label>
         <input type="number" id="md-points" inputmode="numeric" placeholder="例：10">
         <p class="field-hint">打錯要扣回，填負數即可（例如 -10）</p>
@@ -93,7 +93,7 @@
         </div>
       </div>
 
-      <button class="btn danger-outline" id="md-delete">刪除這位客戶</button>
+      <button class="btn danger-outline" id="md-delete">刪除這位會員</button>
 
       <!-- 會員自己登入之後再做（Steve 2026-09-17），先藏起來，程式保留 -->
       <div class="card" id="md-login-section" style="display:none">
@@ -131,15 +131,20 @@
     <div class="stat-row" id="r-stats"></div>
     <div class="card">
       <div class="seg-btns">
-        <button class="btn small" id="r-daily">每日（近 30 天）</button>
-        <button class="btn small secondary" id="r-monthly">每月（近 12 月）</button>
+        <button class="btn small" id="r-daily">當日（近 30 天）</button>
+        <button class="btn small secondary" id="r-weekly">週（近 12 週）</button>
+        <button class="btn small secondary" id="r-monthly">月（近 12 月）</button>
+        <button class="btn small secondary" id="r-yearly">年（近 5 年）</button>
+        <button class="btn small secondary" id="r-all">全部</button>
       </div>
+      <p class="field-hint" id="r-reset-hint" style="display:none;margin-top:0"></p>
       <div class="xl-wrap">
         <table class="xl">
           <thead><tr><th class="sticky">期間</th><th>消費金額</th><th>發出點數</th><th>兌換點數</th><th>活躍會員</th><th>交易筆數</th></tr></thead>
           <tbody id="r-body"></tbody>
         </table>
       </div>
+      <button class="btn danger-outline small" id="r-reset-btn" style="display:none;margin-top:12px">重置全部統計</button>
     </div>
   </div>
 
@@ -172,16 +177,16 @@
     </div>
   </div>
 
-  <!-- 新增客戶 Modal -->
+  <!-- 新增會員 Modal -->
   <div id="nc-modal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
     <div class="modal-box" style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
-      <h3 style="margin-bottom:16px;color:var(--primary)">新增客戶</h3>
+      <h3 style="margin-bottom:16px;color:var(--primary)">新增會員</h3>
       <label style="display:block;margin-bottom:8px">姓名<input type="text" id="nc-name" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <label style="display:block;margin-bottom:8px">手機（選填）<input type="tel" inputmode="tel" id="nc-phone" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <label style="display:block;margin-bottom:8px">初始點數（選填）<input type="number" inputmode="numeric" id="nc-points" class="input" min="0" style="display:block;width:100%;margin-top:4px"></label>
       <label style="display:block;margin-bottom:16px">消費日期時間（有初始點數才用，預設現在）<input type="datetime-local" id="nc-date" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <div style="display:flex;gap:8px">
-        <button class="btn" id="nc-create" style="flex:1">建立客戶</button>
+        <button class="btn" id="nc-create" style="flex:1">建立會員</button>
         <button class="btn secondary" id="nc-cancel" style="flex:1">取消</button>
       </div>
     </div>
@@ -201,6 +206,20 @@
       <div style="display:flex;gap:8px">
         <button class="btn secondary" id="del-cancel" style="flex:1">取消</button>
         <button class="btn danger" id="del-ok" style="flex:1">確定刪除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 重置統計 Modal：每次都要輸入密碼，不像刪除有 30 分鐘免打 -->
+  <div id="reset-modal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
+    <div class="modal-box" style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+      <h3 style="margin-bottom:10px;color:var(--red)">確定要重置全部統計嗎？</h3>
+      <p style="margin-bottom:14px">「全部」這張報表會歸零重新累計，<strong>但會員的點數、餘額、消費紀錄完全不受影響</strong>，只是換一個統計起算時間。</p>
+      <label for="reset-pw">請輸入你自己的登入密碼</label>
+      <input type="password" id="reset-pw" autocomplete="current-password">
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn secondary" id="reset-cancel" style="flex:1">取消</button>
+        <button class="btn danger" id="reset-ok" style="flex:1">確定重置</button>
       </div>
     </div>
   </div>
@@ -228,7 +247,7 @@
   <p class="app-version" id="app-version"></p>
 </div>
 
-<script src="/js/api.js?v=1.0.0"></script>
+<script src="/js/api.js?v=1.1.0"></script>
 <script>
 // 頁尾版本號：從發布時產生的 /version.txt 讀（來源是專案根目錄 VERSION）
 fetch('/version.txt', { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
@@ -310,10 +329,10 @@ async function loadMembers() {
         <td class="sticky"><a class="xl-link" href="#member/${m.id}" title="${esc(m.name)}">${esc(m.name)}</a></td>
         <td class="num"><b>${m.balance || 0}</b></td>
         <td class="num">${m.visit_count || 0} 次</td>
-        <td>${m.last_visit ? fmtVisit(m.last_visit) : '<span class="muted">尚未來訪</span>'}</td>
+        <td>${m.last_visit ? fmtVisit(m.last_visit) : '<span class="muted">尚未消費</span>'}</td>
         <td>${esc(m.phone || '')}</td>
         <td><button class="xl-del" data-del-id="${m.id}" data-del-name="${esc(m.name)}">刪除</button></td>
-      </tr>`).join('') || `<tr><td colspan="6" class="empty">${q ? '找不到符合的客戶' : '還沒有客戶，按上面「＋ 新增客戶」建立第一位'}</td></tr>`;
+      </tr>`).join('') || `<tr><td colspan="6" class="empty">${q ? '找不到符合的會員' : '還沒有會員，按上面「＋ 新增會員」建立第一位'}</td></tr>`;
     document.getElementById('mm-body').querySelectorAll('a.xl-link').forEach(a => {
       a.onclick = () => { navigatedInApp = true; };
     });
@@ -336,7 +355,7 @@ document.getElementById('mm-search-form').onsubmit = e => {
 document.getElementById('mm-prev').onclick = () => { if (mmPage > 1) { mmPage--; loadMembers(); } };
 document.getElementById('mm-next').onclick = () => { mmPage++; loadMembers(); };
 
-// ---- 新增客戶（免註冊）----
+// ---- 新增會員（免註冊）----
 const ncModal = document.getElementById('nc-modal');
 document.getElementById('mm-open-new').onclick = () => {
   ['nc-name', 'nc-phone', 'nc-points'].forEach(id => document.getElementById(id).value = '');
@@ -356,7 +375,7 @@ document.getElementById('nc-create').onclick = async () => {
       date: document.getElementById('nc-date').value,
     });
     ncModal.style.display = 'none';
-    showMsg(msg, '客戶已建立', true);
+    showMsg(msg, '會員已建立', true);
     mmPage = 1;
     loadMembers();
   } catch (e) { showMsg(msg, e.message); }
@@ -372,8 +391,8 @@ async function openDetail(id) {
     const visits = data.transactions.filter(t => t.points > 0);
     document.getElementById('md-count').textContent = visits.length;
     document.getElementById('md-visits').textContent = visits.length
-      ? `最近來訪：${fmtVisit(visits[0].created_at)}${data.transactions.length >= 200 ? '（只算最近 200 筆）' : ''}`
-      : '還沒有來訪紀錄';
+      ? `最近消費：${fmtVisit(visits[0].created_at)}${data.transactions.length >= 200 ? '（只算最近 200 筆）' : ''}`
+      : '還沒有消費紀錄';
     document.getElementById('md-tx').innerHTML = data.transactions.map(t => {
       const kind = t.type === 'earn' ? `消費 $${t.amount}` : t.type === 'redeem' ? '兌換扣點' : (t.points > 0 ? '加點' : '扣點');
       return `
@@ -390,7 +409,7 @@ async function openDetail(id) {
     document.getElementById('md-note').value = '';
     document.getElementById('md-login-hint').textContent = data.member.account
       ? `目前登入帳號：${data.member.account}（下面可以重設密碼，或改成新帳號）`
-      : '目前免登入（客戶不能自己看餘額），下面可以幫他開通登入';
+      : '目前免登入（會員不能自己看餘額），下面可以幫他開通登入';
     document.getElementById('md-login-account').value = data.member.account || '';
     document.getElementById('md-login-password').value = '';
     document.getElementById('mm-list-view').style.display = 'none';
@@ -426,7 +445,7 @@ document.getElementById('md-login-save').onclick = async () => {
   } catch (e) { showMsg(msg, e.message); }
 };
 
-// ---- 刪除客戶：每次都跳確認；密碼輸入一次後 30 分鐘內免再輸入 ----
+// ---- 刪除會員：每次都跳確認；密碼輸入一次後 30 分鐘內免再輸入 ----
 // 許可由伺服器簽發（綁定目前登入者＋到期時間），這裡只是暫存起來重用
 const delModal = document.getElementById('del-modal');
 let delTarget = null;
@@ -514,9 +533,13 @@ document.getElementById('s-save').onclick = async () => {
 };
 
 // ---- 統計報表 ----
+const R_TABS = { daily: 'r-daily', weekly: 'r-weekly', monthly: 'r-monthly', yearly: 'r-yearly', all: 'r-all' };
 async function loadReports(period) {
-  document.getElementById('r-daily').className = 'btn small' + (period === 'daily' ? '' : ' secondary');
-  document.getElementById('r-monthly').className = 'btn small' + (period === 'monthly' ? '' : ' secondary');
+  Object.entries(R_TABS).forEach(([p, id]) => {
+    document.getElementById(id).className = 'btn small' + (p === period ? '' : ' secondary');
+  });
+  document.getElementById('r-reset-btn').style.display = period === 'all' ? 'inline-block' : 'none';
+  const hint = document.getElementById('r-reset-hint');
   try {
     const data = await API.get('/reports?period=' + period);
     const sum = (k) => data.rows.reduce((acc, r) => acc + (r[k] || 0), 0);
@@ -534,10 +557,38 @@ async function loadReports(period) {
         <td data-label="活躍會員">${r.active_members}</td>
         <td data-label="交易筆數">${r.tx_count}</td>
       </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">期間內沒有交易</td></tr>';
+    if (period === 'all') {
+      hint.style.display = 'block';
+      hint.textContent = data.reset_at && data.reset_at > '1970-01-01'
+        ? `統計起算時間：${fmtVisit(data.reset_at)}（上次重置後累計至今）`
+        : '統計起算時間：系統啟用至今（還沒重置過）';
+    } else {
+      hint.style.display = 'none';
+    }
   } catch (e) { showMsg(msg, e.message); }
 }
-document.getElementById('r-daily').onclick = () => loadReports('daily');
-document.getElementById('r-monthly').onclick = () => loadReports('monthly');
+Object.entries(R_TABS).forEach(([period, id]) => { document.getElementById(id).onclick = () => loadReports(period); });
+
+const resetModal = document.getElementById('reset-modal');
+document.getElementById('r-reset-btn').onclick = () => {
+  document.getElementById('reset-pw').value = '';
+  resetModal.style.display = 'flex';
+};
+document.getElementById('reset-cancel').onclick = () => { resetModal.style.display = 'none'; };
+resetModal.addEventListener('click', e => { if (e.target === resetModal) resetModal.style.display = 'none'; });
+document.getElementById('reset-ok').onclick = async () => {
+  const pw = document.getElementById('reset-pw').value;
+  if (!pw) return showMsg(msg, '請輸入密碼');
+  const okBtn = document.getElementById('reset-ok');
+  okBtn.disabled = true;
+  try {
+    await API.post('/reports/reset', { password: pw });
+    resetModal.style.display = 'none';
+    showMsg(msg, '統計已重置', true);
+    loadReports('all');
+  } catch (e) { showMsg(msg, e.message); }
+  okBtn.disabled = false;
+};
 
 // ---- 帳號管理（admin） ----
 async function loadStaff() {

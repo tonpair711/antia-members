@@ -42,7 +42,8 @@ INSERT INTO settings (key, value) VALUES
   ('rate_amount', '100'),        -- 每消費 100 元
   ('rate_points', '10'),         -- 得 10 點
   ('validity_months', '6'),      -- 點數有效期 6 個月
-  ('redeem_value', '1');         -- 1 點折抵 NT$1
+  ('redeem_value', '1'),         -- 1 點折抵 NT$1
+  ('report_reset_at', '1970-01-01 00:00:00'); -- 統計報表「全部」的起算時間，重置時更新這個值
 
 -- 初始 admin 帳號（密碼 admin1234，首次登入請立即修改）
 INSERT INTO users (account, password_hash, salt, name, role) VALUES

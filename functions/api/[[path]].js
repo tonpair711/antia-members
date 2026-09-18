@@ -88,6 +88,12 @@ function requireRole(user, minRole) {
   return null;
 }
 
+// 統計報表「全部」的起算時間；沒設過就當系統啟用以來全算
+async function getReportResetAt(env) {
+  const row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'report_reset_at'").first();
+  return row ? row.value : '1970-01-01 00:00:00';
+}
+
 async function getSettings(env) {
   const { results } = await env.DB.prepare('SELECT key, value FROM settings').all();
   const s = {};
@@ -438,10 +444,35 @@ export async function onRequest(context) {
     if (path === '/reports' && method === 'GET') {
       const denied = requireRole(user, 'boss');
       if (denied) return denied;
-      const period = url.searchParams.get('period') === 'monthly' ? 'monthly' : 'daily';
+      const periodParam = url.searchParams.get('period');
+      const period = ['weekly', 'monthly', 'yearly', 'all'].includes(periodParam) ? periodParam : 'daily';
+      const totalMembers = await env.DB.prepare("SELECT COUNT(*) AS c FROM users WHERE role='member' AND active=1").first();
+
+      if (period === 'all') {
+        // 「全部」不是相對區間，是從上次重置（或系統啟用）以來的累積總數
+        const resetAt = await getReportResetAt(env);
+        const row = await env.DB.prepare(
+          `SELECT SUM(CASE WHEN type='earn' THEN amount ELSE 0 END) AS total_amount,
+                  SUM(CASE WHEN points > 0 THEN points ELSE 0 END) AS points_issued,
+                  SUM(CASE WHEN points < 0 THEN -points ELSE 0 END) AS points_redeemed,
+                  COUNT(DISTINCT user_id) AS active_members,
+                  COUNT(*) AS tx_count
+           FROM transactions WHERE created_at > ?`
+        ).bind(resetAt).first();
+        const rows = row.tx_count ? [{
+          period: '全部',
+          total_amount: row.total_amount || 0,
+          points_issued: row.points_issued || 0,
+          points_redeemed: row.points_redeemed || 0,
+          active_members: row.active_members || 0,
+          tx_count: row.tx_count || 0,
+        }] : [];
+        return json({ period, rows, total_members: totalMembers.c, reset_at: resetAt });
+      }
+
       // 以台灣時區 (+8) 分組
-      const fmt = period === 'monthly' ? '%Y-%m' : '%Y-%m-%d';
-      const range = period === 'monthly' ? "-12 months" : "-30 days";
+      const fmt = period === 'yearly' ? '%Y' : period === 'monthly' ? '%Y-%m' : period === 'weekly' ? '%Y-W%W' : '%Y-%m-%d';
+      const range = period === 'yearly' ? '-5 years' : period === 'monthly' ? '-12 months' : period === 'weekly' ? '-84 days' : '-30 days';
       const { results } = await env.DB.prepare(
         `SELECT strftime('${fmt}', created_at, '+8 hours') AS period,
                 SUM(CASE WHEN type='earn' THEN amount ELSE 0 END) AS total_amount,
@@ -453,8 +484,22 @@ export async function onRequest(context) {
          WHERE created_at > datetime('now', '${range}')
          GROUP BY period ORDER BY period DESC`
       ).all();
-      const totalMembers = await env.DB.prepare("SELECT COUNT(*) AS c FROM users WHERE role='member' AND active=1").first();
       return json({ period, rows: results, total_members: totalMembers.c });
+    }
+
+    // 重置「全部」統計的起算時間；只是換基準點，不刪除任何會員點數或交易紀錄
+    if (path === '/reports/reset' && method === 'POST') {
+      const denied = requireRole(user, 'boss');
+      if (denied) return denied;
+      const b = await request.json().catch(() => ({}));
+      const full = await env.DB.prepare('SELECT password_hash, salt FROM users WHERE id = ?').bind(user.id).first();
+      const hash = await pbkdf2(String(b.password || '').slice(0, 200), full.salt);
+      if (hash !== full.password_hash) return err('密碼錯誤');
+      const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      await env.DB.prepare(
+        "INSERT INTO settings (key, value) VALUES ('report_reset_at', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+      ).bind(now).run();
+      return json({ ok: true, reset_at: now });
     }
 
     // ---- admin：店員/老闆帳號管理 ----

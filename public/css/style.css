@@ -519,8 +519,10 @@ header.topbar button.nav-btn:disabled { opacity: .45; }
 .p-last { margin-top: 12px; font-size: 0.9rem; color: var(--text); }
 
 
-.seg-btns { display: flex; gap: 8px; margin-bottom: 12px; }
-.seg-btns .btn { flex: 1; }
+.seg-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.seg-btns .btn { flex: 1 1 30%; }
+
+.th-sub { font-weight: 400; font-size: 0.68rem; color: var(--muted); }
 
 /* ── 手機（iPhone 寬度約 360～440px） ── */
 @media (max-width: 639px) {
