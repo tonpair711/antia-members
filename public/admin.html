@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.5.0">
+<link rel="stylesheet" href="/css/style.css?v=1.5.1">
 </head>
 <body>
 <header class="topbar">
@@ -250,8 +250,11 @@
       <p style="margin-bottom:14px">要刪除「<strong id="del-name"></strong>」，他的點數和消費紀錄會一起刪掉，<strong>刪了就救不回來</strong>。</p>
       <div id="del-pw-wrap">
         <label for="del-pw">請輸入你自己的登入密碼</label>
-        <input type="password" id="del-pw" autocomplete="current-password">
-        <p class="field-hint">輸入一次後，30 分鐘內刪除不用再打密碼</p>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="password" id="del-pw" autocomplete="off" style="flex:1;margin-bottom:0">
+          <button type="button" class="pw-eye" data-target="del-pw" aria-label="顯示/隱藏密碼">👁</button>
+        </div>
+        <p class="field-hint">輸入一次後，30 分鐘內刪除不用再打密碼；打錯會一直顯示「密碼錯誤」，可以點眼睛圖示確認打了什麼</p>
       </div>
       <p class="field-hint" id="del-grant-hint" style="display:none;margin-top:0"></p>
       <div style="display:flex;gap:8px">
@@ -267,7 +270,10 @@
       <h3 style="margin-bottom:10px;color:var(--red)">確定要重置全部統計嗎？</h3>
       <p style="margin-bottom:14px">「全部」這張報表會歸零重新累計，<strong>但會員的點數、餘額、消費紀錄完全不受影響</strong>，只是換一個統計起算時間。</p>
       <label for="reset-pw">請輸入你自己的登入密碼</label>
-      <input type="password" id="reset-pw" autocomplete="current-password">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="password" id="reset-pw" autocomplete="off" style="flex:1;margin-bottom:0">
+        <button type="button" class="pw-eye" data-target="reset-pw" aria-label="顯示/隱藏密碼">👁</button>
+      </div>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn secondary" id="reset-cancel" style="flex:1">取消</button>
         <button class="btn danger" id="reset-ok" style="flex:1">確定重置</button>
@@ -298,7 +304,7 @@
   <p class="app-version" id="app-version"></p>
 </div>
 
-<script src="/js/api.js?v=1.5.0"></script>
+<script src="/js/api.js?v=1.5.1"></script>
 <script>
 // 頁尾版本號：從發布時產生的 /version.txt 讀（來源是專案根目錄 VERSION）
 fetch('/version.txt', { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
@@ -578,6 +584,15 @@ document.getElementById('md-birthday-save').onclick = async () => {
 
 // ---- 刪除會員：每次都跳確認；密碼輸入一次後 30 分鐘內免再輸入 ----
 // 許可由伺服器簽發（綁定目前登入者＋到期時間），這裡只是暫存起來重用
+// 密碼欄旁邊的眼睛：手機自動填錯密碼時（存了舊密碼、或存了別的帳號）看不出來打錯什麼，
+// 點一下切換成明文自己核對，比一直看到「密碼錯誤」猜半天快
+document.querySelectorAll('.pw-eye').forEach(btn => {
+  btn.onclick = () => {
+    const el = document.getElementById(btn.dataset.target);
+    el.type = el.type === 'password' ? 'text' : 'password';
+  };
+});
+
 const delModal = document.getElementById('del-modal');
 let delTarget = null;
 function getGrant() {

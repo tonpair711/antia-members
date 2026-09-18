@@ -413,6 +413,10 @@ html { -webkit-text-size-adjust: 100%; }
 button, [role="button"] { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 button.btn, .tabs button, header.topbar button { white-space: nowrap; }
 .field-hint { font-size: 0.8rem; color: var(--muted); margin: -6px 0 12px; }
+.pw-eye {
+  flex-shrink: 0; width: 44px; height: 44px; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); background: #fff; font-size: 1.1rem; cursor: pointer;
+}
 .empty { text-align: center; color: var(--muted); padding: 24px 8px; list-style: none; }
 .cell-actions { white-space: nowrap; }
 input[type="date"], input[type="datetime-local"] {
