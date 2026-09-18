@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.4.0">
+<link rel="stylesheet" href="/css/style.css?v=1.5.0">
 </head>
 <body>
 <header class="topbar">
@@ -48,6 +48,7 @@
           <option value="">全部會員</option>
           <option value="inactive">久沒來（30 天以上未消費）</option>
           <option value="expiring">點數即將到期（30 天內）</option>
+          <option value="birthday">這個月壽星</option>
         </select>
         <button class="btn secondary" id="mm-export">⬇ 匯出 Excel</button>
       </div>
@@ -76,6 +77,16 @@
           <div class="p-stat"><div class="v" id="md-count">0</div><div class="k">消費次數</div></div>
         </div>
         <div class="p-last" id="md-visits"></div>
+        <div class="p-last" id="md-referral-info"></div>
+      </div>
+
+      <div class="card">
+        <h2>生日</h2>
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <input type="text" id="md-birthday" placeholder="例：03-15（月-日）" maxlength="5" style="flex:1">
+          <button class="btn secondary" id="md-birthday-save" style="width:auto;flex-shrink:0">儲存</button>
+        </div>
+        <p class="field-hint">只存月和日，生日當月列表可以篩「這個月壽星」</p>
       </div>
 
       <div class="card">
@@ -131,6 +142,24 @@
       <p class="preview-hint" id="s-preview"></p>
       <button class="btn" id="s-save">儲存規則</button>
       <p style="font-size:.8rem;color:var(--muted);margin-top:8px">※ 規則修改只影響之後的交易，已發出的點數不變。</p>
+    </div>
+
+    <div class="card">
+      <h2>會員分級</h2>
+      <p class="field-hint" style="margin-top:0">用會員這輩子拿過的點數（不管有沒有過期或用掉）判斷等級，列表跟詳情頁會顯示銀卡/金卡標籤</p>
+      <div class="row form-row">
+        <div><label>累積滿多少點升「銀卡」</label><input type="text" id="s-tier-silver" inputmode="numeric" pattern="[0-9]*" autocomplete="off"></div>
+        <div><label>累積滿多少點升「金卡」</label><input type="text" id="s-tier-gold" inputmode="numeric" pattern="[0-9]*" autocomplete="off"></div>
+      </div>
+      <button class="btn" id="s-tier-save">儲存分級門檻</button>
+    </div>
+
+    <div class="card">
+      <h2>介紹好友獎勵</h2>
+      <p class="field-hint" style="margin-top:0">新增會員時填「介紹人手機」，符合的話會自動幫介紹人加點；填 0 等於關掉這功能</p>
+      <label>介紹一位好友，介紹人可得幾點</label>
+      <input type="text" id="s-referral-bonus" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+      <button class="btn" id="s-referral-save">儲存介紹獎勵</button>
     </div>
   </div>
 
@@ -202,7 +231,11 @@
       <label style="display:block;margin-bottom:8px">姓名<input type="text" id="nc-name" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <label style="display:block;margin-bottom:8px">手機（選填）<input type="tel" inputmode="tel" id="nc-phone" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <label style="display:block;margin-bottom:8px">初始點數（選填）<input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" id="nc-points" class="input" style="display:block;width:100%;margin-top:4px"></label>
-      <label style="display:block;margin-bottom:16px">消費日期時間（有初始點數才用，預設現在）<input type="datetime-local" id="nc-date" class="input" style="display:block;width:100%;margin-top:4px"></label>
+      <label style="display:block;margin-bottom:8px">消費日期時間（有初始點數才用，預設現在）<input type="datetime-local" id="nc-date" class="input" style="display:block;width:100%;margin-top:4px"></label>
+      <label style="display:block;margin-bottom:8px">生日（選填，MM-DD）<input type="text" id="nc-birthday" class="input" placeholder="例：03-15" maxlength="5" style="display:block;width:100%;margin-top:4px"></label>
+      <label style="display:block;margin-bottom:16px">介紹人手機（選填）<input type="tel" inputmode="tel" id="nc-referrer" class="input" placeholder="輸入介紹人的手機號碼" style="display:block;width:100%;margin-top:4px">
+        <span class="field-hint" style="margin:4px 0 0">找得到才會給介紹人加分（見規則設定）</span>
+      </label>
       <div style="display:flex;gap:8px">
         <button class="btn" id="nc-create" style="flex:1">建立會員</button>
         <button class="btn secondary" id="nc-cancel" style="flex:1">取消</button>
@@ -265,7 +298,7 @@
   <p class="app-version" id="app-version"></p>
 </div>
 
-<script src="/js/api.js?v=1.4.0"></script>
+<script src="/js/api.js?v=1.5.0"></script>
 <script>
 // 頁尾版本號：從發布時產生的 /version.txt 讀（來源是專案根目錄 VERSION）
 fetch('/version.txt', { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
@@ -288,6 +321,11 @@ sanitizeNumericInput(document.getElementById('s-rate-amount'), false);
 sanitizeNumericInput(document.getElementById('s-rate-points'), false);
 sanitizeNumericInput(document.getElementById('s-validity'), false);
 sanitizeNumericInput(document.getElementById('s-redeem-value'), false);
+sanitizeNumericInput(document.getElementById('s-tier-silver'), false);
+sanitizeNumericInput(document.getElementById('s-tier-gold'), false);
+sanitizeNumericInput(document.getElementById('s-referral-bonus'), false);
+sanitizeBirthdayInput(document.getElementById('nc-birthday'));
+sanitizeBirthdayInput(document.getElementById('md-birthday'));
 
 // ---- 改密碼 ----
 const pwModal = document.getElementById('pw-modal');
@@ -345,7 +383,12 @@ document.getElementById('nav-reload').onclick = () => {
 };
 
 // ---- 會員管理 ----
-let mmPage = 1, mmDetailId = null;
+function tierBadge(tier) {
+  if (tier === 'gold') return '<span class="tier-badge tier-gold" title="金卡會員">金</span>';
+  if (tier === 'silver') return '<span class="tier-badge tier-silver" title="銀卡會員">銀</span>';
+  return '';
+}
+let mmPage = 1, mmDetailId = null, mmDetailName = '';
 async function loadMembers() {
   const q = document.getElementById('mm-q').value.trim();
   const filter = document.getElementById('mm-filter').value;
@@ -354,10 +397,11 @@ async function loadMembers() {
     const emptyMsg = q ? '找不到符合的會員'
       : filter === 'inactive' ? '目前沒有久沒來的會員'
       : filter === 'expiring' ? '目前沒有即將到期的點數'
+      : filter === 'birthday' ? '這個月沒有壽星'
       : '還沒有會員，按上面「＋ 新增會員」建立第一位';
     document.getElementById('mm-body').innerHTML = data.members.map(m => `
       <tr>
-        <td class="sticky"><a class="xl-link" href="#member/${m.id}" title="${esc(m.name)}">${esc(m.name)}</a></td>
+        <td class="sticky"><a class="xl-link" href="#member/${m.id}" title="${esc(m.name)}">${esc(m.name)}</a>${tierBadge(m.tier)}</td>
         <td class="num"><b>${m.balance || 0}</b></td>
         <td class="num">${m.visit_count || 0} 次</td>
         <td>${m.last_visit ? fmtVisit(m.last_visit) : '<span class="muted">尚未消費</span>'}</td>
@@ -430,7 +474,7 @@ document.getElementById('mm-next').onclick = () => { mmPage++; loadMembers(); };
 // ---- 新增會員（免註冊）----
 const ncModal = document.getElementById('nc-modal');
 document.getElementById('mm-open-new').onclick = () => {
-  ['nc-name', 'nc-phone', 'nc-points'].forEach(id => document.getElementById(id).value = '');
+  ['nc-name', 'nc-phone', 'nc-points', 'nc-birthday', 'nc-referrer'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('nc-date').value = nowTaipeiInput();
   ncModal.style.display = 'flex';
 };
@@ -445,6 +489,8 @@ document.getElementById('nc-create').onclick = async () => {
       phone: document.getElementById('nc-phone').value.trim(),
       points: parseInt(document.getElementById('nc-points').value) || 0,
       date: document.getElementById('nc-date').value,
+      birthday: document.getElementById('nc-birthday').value.trim(),
+      referrer_phone: document.getElementById('nc-referrer').value.trim(),
     });
     ncModal.style.display = 'none';
     showMsg(msg, '會員已建立', true);
@@ -457,7 +503,8 @@ async function openDetail(id) {
   try {
     const data = await API.get('/members/' + id);
     mmDetailId = id;
-    document.getElementById('md-title').textContent = data.member.name;
+    mmDetailName = data.member.name;
+    document.getElementById('md-title').innerHTML = esc(data.member.name) + tierBadge(data.member.tier);
     document.getElementById('md-phone').textContent = data.member.phone || '';
     document.getElementById('md-balance').textContent = data.balance;
     const visits = data.transactions.filter(t => t.points > 0);
@@ -465,6 +512,11 @@ async function openDetail(id) {
     document.getElementById('md-visits').textContent = visits.length
       ? `最近消費：${fmtVisit(visits[0].created_at)}${data.transactions.length >= 200 ? '（只算最近 200 筆）' : ''}`
       : '還沒有消費紀錄';
+    document.getElementById('md-referral-info').textContent = [
+      data.member.referrer_name ? `介紹人：${data.member.referrer_name}` : '',
+      data.member.referral_count ? `已介紹 ${data.member.referral_count} 位好友` : '',
+    ].filter(Boolean).join('｜');
+    document.getElementById('md-birthday').value = data.member.birthday || '';
     document.getElementById('md-tx').innerHTML = data.transactions.map(t => {
       const kind = t.type === 'earn' ? `消費 $${t.amount}` : t.type === 'redeem' ? '兌換扣點' : (t.points > 0 ? '加點' : '扣點');
       return `
@@ -493,7 +545,7 @@ async function openDetail(id) {
 document.getElementById('md-adjust').onclick = async () => {
   const points = parseInt(document.getElementById('md-points').value);
   if (!points) return showMsg(msg, '請輸入非零點數');
-  if (!confirm(`確定幫「${document.getElementById('md-title').textContent}」${points > 0 ? '加' : '扣'} ${Math.abs(points)} 點？`)) return;
+  if (!confirm(`確定幫「${mmDetailName}」${points > 0 ? '加' : '扣'} ${Math.abs(points)} 點？`)) return;
   try {
     const data = await API.post('/points/adjust', {
       user_id: mmDetailId, points,
@@ -514,6 +566,13 @@ document.getElementById('md-login-save').onclick = async () => {
     await API.put('/members/' + mmDetailId, { account, password });
     showMsg(msg, '登入帳密已設定', true);
     openDetail(mmDetailId);
+  } catch (e) { showMsg(msg, e.message); }
+};
+
+document.getElementById('md-birthday-save').onclick = async () => {
+  try {
+    await API.put('/members/' + mmDetailId + '/profile', { birthday: document.getElementById('md-birthday').value.trim() });
+    showMsg(msg, '生日已更新', true);
   } catch (e) { showMsg(msg, e.message); }
 };
 
@@ -564,7 +623,7 @@ document.getElementById('del-ok').onclick = async () => {
     okBtn.disabled = false;
   }
 };
-document.getElementById('md-delete').onclick = () => openDelete(mmDetailId, document.getElementById('md-title').textContent);
+document.getElementById('md-delete').onclick = () => openDelete(mmDetailId, mmDetailName);
 document.getElementById('mm-body').addEventListener('click', e => {
   const b = e.target.closest('button[data-del-id]');
   if (b) openDelete(parseInt(b.dataset.delId), b.dataset.delName);
@@ -578,6 +637,9 @@ async function loadSettings() {
     document.getElementById('s-rate-points').value = s.rate_points;
     document.getElementById('s-validity').value = s.validity_months;
     document.getElementById('s-redeem-value').value = s.redeem_value;
+    document.getElementById('s-tier-silver').value = s.tier_silver_threshold;
+    document.getElementById('s-tier-gold').value = s.tier_gold_threshold;
+    document.getElementById('s-referral-bonus').value = s.referral_bonus_points;
     updateSettingsPreview();
   } catch (e) { showMsg(msg, e.message); }
 }
@@ -601,6 +663,23 @@ document.getElementById('s-save').onclick = async () => {
       redeem_value: document.getElementById('s-redeem-value').value,
     });
     showMsg(msg, '規則已更新', true);
+  } catch (e) { showMsg(msg, e.message); }
+};
+document.getElementById('s-tier-save').onclick = async () => {
+  try {
+    await API.put('/settings', {
+      tier_silver_threshold: document.getElementById('s-tier-silver').value,
+      tier_gold_threshold: document.getElementById('s-tier-gold').value,
+    });
+    showMsg(msg, '分級門檻已更新', true);
+  } catch (e) { showMsg(msg, e.message); }
+};
+document.getElementById('s-referral-save').onclick = async () => {
+  try {
+    await API.put('/settings', {
+      referral_bonus_points: document.getElementById('s-referral-bonus').value,
+    });
+    showMsg(msg, '介紹獎勵已更新', true);
   } catch (e) { showMsg(msg, e.message); }
 };
 

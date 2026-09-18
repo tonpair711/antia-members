@@ -495,6 +495,12 @@ table.xl .sticky { position: sticky; left: 0; z-index: 1; box-shadow: 1px 0 0 #d
 table.xl thead .sticky { z-index: 3; }
 table.xl td.empty { text-align: center; color: var(--muted); padding: 22px 12px; white-space: normal; }
 .xl-link { max-width: 9em; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; color: var(--primary-dark); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; display: inline-block; padding: 4px 0; }
+.tier-badge {
+  display: inline-block; margin-left: 4px; padding: 1px 6px; border-radius: 999px;
+  font-size: 0.68rem; font-weight: 700; vertical-align: middle;
+}
+.tier-badge.tier-silver { background: #e4e6e9; color: #5a6067; }
+.tier-badge.tier-gold { background: #f7e3a1; color: #8a6d1a; }
 .xl-del {
   background: none;
   border: 1px solid #f0c9c9;

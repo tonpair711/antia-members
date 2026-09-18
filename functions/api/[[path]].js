@@ -158,7 +158,17 @@ async function getSettings(env) {
     rate_points: parseInt(s.rate_points) || 10,
     validity_months: parseInt(s.validity_months) || 6,
     redeem_value: parseInt(s.redeem_value) || 1,
+    tier_silver_threshold: parseInt(s.tier_silver_threshold) || 100,
+    tier_gold_threshold: parseInt(s.tier_gold_threshold) || 300,
+    referral_bonus_points: parseInt(s.referral_bonus_points) || 0,
   };
+}
+
+// 會員分級：用累積拿過的點數（不管有沒有過期/用掉），不是目前餘額
+function tierOf(lifetimePoints, s) {
+  if (lifetimePoints >= s.tier_gold_threshold) return 'gold';
+  if (lifetimePoints >= s.tier_silver_threshold) return 'silver';
+  return 'basic';
 }
 
 // 有效餘額 = 未到期批次的 remaining 總和
@@ -195,6 +205,16 @@ async function buildDeduction(env, userId, points) {
 
 function validAccount(account) {
   return /^09\d{8}$/.test(account) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account);
+}
+
+// 生日只存 MM-DD（不存年），順便擋掉「13 月」「日期超過當月天數」這種打錯
+function validBirthday(bd) {
+  const m = bd.match(/^(\d{2})-(\d{2})$/);
+  if (!m) return false;
+  const month = +m[1], day = +m[2];
+  if (month < 1 || month > 12) return false;
+  const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1]; // 2 月用閏年上限 29，容許 2/29
+  return day >= 1 && day <= daysInMonth;
 }
 
 // 前端送來的台灣時間（YYYY-MM-DDTHH:MM 或只有 YYYY-MM-DD）轉成 D1 用的 UTC 字串；空值＝現在
@@ -286,7 +306,7 @@ export async function onRequest(context) {
       if (denied) return denied;
       const q = (url.searchParams.get('q') || '').trim();
       const page = Math.max(1, parseInt(url.searchParams.get('page')) || 1);
-      // filter=inactive：久沒來（30 天內沒消費過，或從沒消費過）；filter=expiring：30 天內有點數要到期
+      // filter=inactive：久沒來；filter=expiring：30 天內有點數要到期；filter=birthday：這個月壽星
       const filter = url.searchParams.get('filter');
       // export=1 給匯出用：不分頁，一次全拿（會員數量不大，這規模夠用）
       const isExport = url.searchParams.get('export') === '1';
@@ -301,22 +321,27 @@ export async function onRequest(context) {
       let having = '';
       if (filter === 'inactive') having = "WHERE m.last_visit IS NULL OR m.last_visit < datetime('now','-30 days')";
       else if (filter === 'expiring') having = 'WHERE m.expiring_soon > 0';
+      else if (filter === 'birthday') having = "WHERE substr(m.birthday,1,2) = strftime('%m','now','+8 hours')";
+      const s = await getSettings(env);
       const { results } = await env.DB.prepare(
         // last_visit／visit_count：以「加點」紀錄（points > 0）當作來上課的時間
+        // lifetime_points：這輩子拿過的點數（不管過期沒過期、用掉沒用掉），用來算會員分級
         `SELECT * FROM (
-           SELECT u.id, u.account, u.name, u.phone, u.email, u.active, u.created_at,
+           SELECT u.id, u.account, u.name, u.phone, u.email, u.active, u.created_at, u.birthday,
                   (SELECT MAX(t.created_at) FROM transactions t WHERE t.user_id = u.id AND t.points > 0) AS last_visit,
                   (SELECT COUNT(*) FROM transactions t WHERE t.user_id = u.id AND t.points > 0) AS visit_count,
                   (SELECT COALESCE(SUM(t.remaining),0) FROM transactions t WHERE t.user_id = u.id AND t.remaining > 0 AND t.expires_at > datetime('now')) AS balance,
-                  (SELECT COALESCE(SUM(t.remaining),0) FROM transactions t WHERE t.user_id = u.id AND t.remaining > 0 AND t.expires_at > datetime('now') AND t.expires_at <= datetime('now','+30 days')) AS expiring_soon
+                  (SELECT COALESCE(SUM(t.remaining),0) FROM transactions t WHERE t.user_id = u.id AND t.remaining > 0 AND t.expires_at > datetime('now') AND t.expires_at <= datetime('now','+30 days')) AS expiring_soon,
+                  (SELECT COALESCE(SUM(t.points),0) FROM transactions t WHERE t.user_id = u.id AND t.points > 0) AS lifetime_points
            FROM users u WHERE ${where}
          ) m ${having} ORDER BY m.id DESC LIMIT ${per + 1} OFFSET ${(page - 1) * per}`
       ).bind(...binds).all();
       const hasMore = results.length > per;
-      return json({ members: results.slice(0, per), hasMore, page });
+      const members = results.slice(0, per).map(m => ({ ...m, tier: tierOf(m.lifetime_points, s) }));
+      return json({ members, hasMore, page });
     }
 
-    // 店員/老闆手動建檔（免註冊，客戶不用自己有帳密）＋可選初始點數
+    // 店員/老闆手動建檔（免註冊，客戶不用自己有帳密）＋可選初始點數／生日／介紹人
     if (path === '/members' && method === 'POST') {
       const denied = requireRole(user, 'staff');
       if (denied) return denied;
@@ -324,19 +349,36 @@ export async function onRequest(context) {
       const name = (b.name || '').trim();
       const phone = (b.phone || '').trim();
       const points = parseInt(b.points) || 0;
+      const birthday = (b.birthday || '').trim();
       if (!name) return err('請輸入姓名');
+      if (birthday && !validBirthday(birthday)) return err('生日格式要 MM-DD，例如 03-15，日期要是真的存在的');
+      const s = await getSettings(env);
+
+      let referrerId = null;
+      const referrerPhone = (b.referrer_phone || '').trim();
+      if (referrerPhone) {
+        const ref = await env.DB.prepare("SELECT id FROM users WHERE phone = ? AND role = 'member'").bind(referrerPhone).first();
+        if (!ref) return err('找不到介紹人的手機號碼，請確認或留空');
+        referrerId = ref.id;
+      }
+
       const result = await env.DB.prepare(
-        "INSERT INTO users (account, password_hash, salt, name, phone, email, role) VALUES (NULL, NULL, NULL, ?, ?, '', 'member')"
-      ).bind(name, phone).run();
+        "INSERT INTO users (account, password_hash, salt, name, phone, email, role, birthday, referrer_id) VALUES (NULL, NULL, NULL, ?, ?, '', 'member', ?, ?)"
+      ).bind(name, phone, birthday || null, referrerId).run();
       const userId = result.meta.last_row_id;
       if (points > 0) {
-        const s = await getSettings(env);
         const dateVal = toUtcSql(b.date);
         if (!dateVal) return err('上課時間格式不正確，或填到未來的時間');
         await env.DB.prepare(
           `INSERT INTO transactions (user_id, type, points, remaining, expires_at, operator_id, note, created_at)
            VALUES (?,'adjust',?,?,datetime(?,'+${s.validity_months} months'),?,?,?)`
         ).bind(userId, points, points, dateVal, user.id, b.note || '新增會員', dateVal).run();
+      }
+      if (referrerId && s.referral_bonus_points > 0) {
+        await env.DB.prepare(
+          `INSERT INTO transactions (user_id, type, points, remaining, expires_at, operator_id, note)
+           VALUES (?,'adjust',?,?,datetime('now','+${s.validity_months} months'),?,?)`
+        ).bind(referrerId, s.referral_bonus_points, s.referral_bonus_points, user.id, `介紹好友「${name}」獎勵`).run();
       }
       const balance = await getBalance(env, userId);
       return json({ ok: true, id: userId, balance });
@@ -348,17 +390,46 @@ export async function onRequest(context) {
       if (denied) return denied;
       const id = parseInt(memberMatch[1]);
       const m = await env.DB.prepare(
-        'SELECT id, account, name, phone, email, active, created_at FROM users WHERE id = ?'
+        `SELECT u.id, u.account, u.name, u.phone, u.email, u.active, u.created_at, u.birthday, u.referrer_id,
+                (SELECT name FROM users r WHERE r.id = u.referrer_id) AS referrer_name,
+                (SELECT COUNT(*) FROM users x WHERE x.referrer_id = u.id) AS referral_count,
+                (SELECT COALESCE(SUM(t.points),0) FROM transactions t WHERE t.user_id = u.id AND t.points > 0) AS lifetime_points
+         FROM users u WHERE u.id = ?`
       ).bind(id).first();
       if (!m) return err('找不到會員', 404);
       const balance = await getBalance(env, id);
       const expiring = await getExpiringSoon(env, id);
+      const s = await getSettings(env);
       const { results: txs } = await env.DB.prepare(
         `SELECT t.id, t.type, t.amount, t.points, t.expires_at, t.note, t.created_at, o.name AS operator_name
          FROM transactions t LEFT JOIN users o ON o.id = t.operator_id
          WHERE t.user_id = ? ORDER BY t.created_at DESC, t.id DESC LIMIT 200`
       ).bind(id).all();
-      return json({ member: m, balance, expiring, transactions: txs });
+      return json({ member: { ...m, tier: tierOf(m.lifetime_points, s) }, balance, expiring, transactions: txs });
+    }
+
+    // 改會員的生日／手機（跟登入帳密分開，店員以上就能改，不用像設定登入帳密那樣限制）
+    const profileMatch = path.match(/^\/members\/(\d+)\/profile$/);
+    if (profileMatch && method === 'PUT') {
+      const denied = requireRole(user, 'staff');
+      if (denied) return denied;
+      const id = parseInt(profileMatch[1]);
+      const target = await env.DB.prepare("SELECT id FROM users WHERE id = ? AND role = 'member'").bind(id).first();
+      if (!target) return err('找不到會員', 404);
+      const b = await request.json();
+      const sets = [], binds = [];
+      if (b.birthday !== undefined) {
+        const bd = (b.birthday || '').trim();
+        if (bd && !validBirthday(bd)) return err('生日格式要 MM-DD，例如 03-15，日期要是真的存在的');
+        sets.push('birthday = ?'); binds.push(bd || null);
+      }
+      if (b.phone !== undefined) {
+        sets.push('phone = ?'); binds.push((b.phone || '').trim());
+      }
+      if (!sets.length) return err('沒有要更新的欄位');
+      binds.push(id);
+      await env.DB.prepare(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`).bind(...binds).run();
+      return json({ ok: true });
     }
 
     // 設定/重設會員登入帳密（開通免登入客戶的登入，或重設忘記密碼的會員）
@@ -497,11 +568,33 @@ export async function onRequest(context) {
       if (denied) return denied;
       const b = await request.json();
       const stmts = [];
+      const upsert = (key, v) => env.DB.prepare(
+        'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
+      ).bind(key, String(v));
+      // 每個設定分開儲存（畫面上分成好幾張卡片、各自一顆儲存鍵），沒帶到的欄位維持原值不動
       for (const key of ['rate_amount', 'rate_points', 'validity_months', 'redeem_value']) {
+        if (b[key] === undefined) continue;
         const v = parseInt(b[key]);
         if (!v || v <= 0) return err(`${key} 必須為正整數`);
-        stmts.push(env.DB.prepare('UPDATE settings SET value = ? WHERE key = ?').bind(String(v), key));
+        stmts.push(upsert(key, v));
       }
+      // 分級門檻／介紹獎勵點數：選填，沒帶就維持原值不動
+      if (b.tier_silver_threshold !== undefined) {
+        const v = parseInt(b.tier_silver_threshold);
+        if (!v || v <= 0) return err('銀卡門檻必須為正整數');
+        stmts.push(upsert('tier_silver_threshold', v));
+      }
+      if (b.tier_gold_threshold !== undefined) {
+        const v = parseInt(b.tier_gold_threshold);
+        if (!v || v <= 0) return err('金卡門檻必須為正整數');
+        stmts.push(upsert('tier_gold_threshold', v));
+      }
+      if (b.referral_bonus_points !== undefined) {
+        const v = parseInt(b.referral_bonus_points);
+        if (isNaN(v) || v < 0) return err('介紹獎勵點數不能是負的');
+        stmts.push(upsert('referral_bonus_points', v));
+      }
+      if (!stmts.length) return err('沒有要更新的欄位');
       await env.DB.batch(stmts);
       return json({ ok: true });
     }
