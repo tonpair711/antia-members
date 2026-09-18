@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.2.1">
+<link rel="stylesheet" href="/css/style.css?v=1.3.0">
 </head>
 <body>
 <header class="topbar">
@@ -157,10 +157,11 @@
   <!-- 帳號管理（admin） -->
   <div class="tab-panel" id="panel-staff">
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:12px">
         <h2 style="margin:0;white-space:nowrap">帳號列表</h2>
         <button class="btn" id="st-open-modal" style="white-space:nowrap;flex-shrink:0">＋ 新增帳號</button>
       </div>
+      <p class="field-hint" id="st-scope-hint" style="margin-bottom:12px"></p>
       <div class="xl-wrap">
         <table class="xl">
           <thead><tr><th class="sticky">姓名</th><th>帳號</th><th>角色</th><th>狀態</th><th>操作</th></tr></thead>
@@ -233,15 +234,15 @@
   <!-- 新增帳號 Modal -->
   <div id="st-modal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
     <div class="modal-box" style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
-      <h3 style="margin-bottom:16px;color:var(--primary)">新增店員／老闆帳號</h3>
+      <h3 style="margin-bottom:16px;color:var(--primary)" id="st-modal-title">新增帳號</h3>
       <label style="display:block;margin-bottom:8px">帳號<input type="text" id="st-account" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <label style="display:block;margin-bottom:8px">姓名<input type="text" id="st-name" class="input" style="display:block;width:100%;margin-top:4px"></label>
       <label style="display:block;margin-bottom:8px">密碼（至少 6 字元）<input type="password" id="st-password" class="input" style="display:block;width:100%;margin-top:4px"></label>
-      <label style="display:block;margin-bottom:16px">角色
+      <label style="display:block;margin-bottom:16px" id="st-role-field">角色
         <select id="st-role" class="input" style="display:block;width:100%;margin-top:4px">
           <option value="staff">店員</option>
           <option value="boss">老闆</option>
-          <option value="admin">管理員</option>
+          <option value="admin">超級管理員</option>
         </select>
       </label>
       <div style="display:flex;gap:8px">
@@ -253,7 +254,7 @@
   <p class="app-version" id="app-version"></p>
 </div>
 
-<script src="/js/api.js?v=1.2.1"></script>
+<script src="/js/api.js?v=1.3.0"></script>
 <script>
 // 頁尾版本號：從發布時產生的 /version.txt 讀（來源是專案根目錄 VERSION）
 fetch('/version.txt', { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
@@ -265,9 +266,9 @@ if (!API.guard(['boss', 'admin'])) throw new Error('redirect');
 const msg = document.getElementById('msg');
 document.getElementById('user-name').textContent = API.name;
 document.getElementById('btn-logout').onclick = () => API.logout();
-if (API.role === 'admin') document.getElementById('tab-staff-btn').style.display = 'block';
+document.getElementById('tab-staff-btn').style.display = 'block';
 
-const roleName = { staff: '店員', boss: '老闆', admin: '管理員' };
+const roleName = { staff: '店員', boss: '老闆', admin: '超級管理員' };
 
 // 數字欄位改用 type=text+inputmode 避免 iOS QuickType 卡住打不進去（見 api.js 說明）
 sanitizeNumericInput(document.getElementById('md-points'), true);
@@ -629,7 +630,10 @@ document.getElementById('reset-ok').onclick = async () => {
   okBtn.disabled = false;
 };
 
-// ---- 帳號管理（admin） ----
+// ---- 帳號管理：老闆只能管理店員；超級管理員能管店員／老闆／超級管理員 ----
+document.getElementById('st-scope-hint').textContent = API.role === 'admin'
+  ? '可以新增店員、老闆、超級管理員帳號'
+  : '只能新增與管理店員帳號；老闆／超級管理員帳號要請超級管理員處理';
 async function loadStaff() {
   try {
     const data = await API.get('/staff');
@@ -639,7 +643,7 @@ async function loadStaff() {
         <td data-label="帳號">${esc(s.account)}</td>
         <td data-label="角色"><span class="badge role">${roleName[s.role] || esc(s.role)}</span></td>
         <td data-label="狀態"><span class="badge ${s.active ? 'on' : 'off'}">${s.active ? '啟用' : '停用'}</span></td>
-        <td class="nowrap">${s.role === 'admin' ? '—' : `
+        <td class="nowrap">${s.role === 'admin' || (API.role === 'boss' && s.role !== 'staff') ? '—' : `
           <button class="btn small secondary" data-act="toggle" data-id="${s.id}" data-active="${s.active}">${s.active ? '停用' : '啟用'}</button>
           <button class="btn small secondary" data-act="pw" data-id="${s.id}">重設密碼</button>`}
         </td>
@@ -664,6 +668,16 @@ async function loadStaff() {
 const stModal = document.getElementById('st-modal');
 document.getElementById('st-open-modal').onclick = () => {
   ['st-account', 'st-name', 'st-password'].forEach(id => document.getElementById(id).value = '');
+  if (API.role === 'admin') {
+    document.getElementById('st-modal-title').textContent = '新增帳號';
+    document.getElementById('st-role-field').style.display = 'block';
+    document.getElementById('st-role').value = 'staff';
+  } else {
+    // 老闆只能建店員，不用給選單自己選，直接固定
+    document.getElementById('st-modal-title').textContent = '新增店員帳號';
+    document.getElementById('st-role-field').style.display = 'none';
+    document.getElementById('st-role').value = 'staff';
+  }
   stModal.style.display = 'flex';
 };
 document.getElementById('st-cancel').onclick = () => { stModal.style.display = 'none'; };

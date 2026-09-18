@@ -549,18 +549,19 @@ export async function onRequest(context) {
       return json({ ok: true, reset_at: now });
     }
 
-    // ---- admin：店員/老闆帳號管理 ----
+    // ---- 帳號管理：老闆只能管理店員帳號；超級管理員（admin）能管店員/老闆/超級管理員 ----
     if (path === '/staff' && method === 'GET') {
-      const denied = requireRole(user, 'admin');
+      const denied = requireRole(user, 'boss');
       if (denied) return denied;
+      const where = user.role === 'admin' ? "role != 'member'" : "role = 'staff'";
       const { results } = await env.DB.prepare(
-        "SELECT id, account, name, role, active, created_at FROM users WHERE role != 'member' ORDER BY id"
+        `SELECT id, account, name, role, active, created_at FROM users WHERE ${where} ORDER BY id`
       ).all();
       return json({ staff: results });
     }
 
     if (path === '/staff' && method === 'POST') {
-      const denied = requireRole(user, 'admin');
+      const denied = requireRole(user, 'boss');
       if (denied) return denied;
       const b = await request.json();
       const account = (b.account || '').trim().toLowerCase();
@@ -568,6 +569,7 @@ export async function onRequest(context) {
       if (!account || !name) return err('請輸入帳號與姓名');
       if ((b.password || '').length < 6) return err('密碼至少 6 個字元');
       if (!['staff', 'boss', 'admin'].includes(b.role)) return err('角色不合法');
+      if (user.role === 'boss' && b.role !== 'staff') return err('權限不足，老闆只能新增店員帳號', 403);
       const exists = await env.DB.prepare('SELECT id FROM users WHERE account = ?').bind(account).first();
       if (exists) return err('此帳號已存在');
       const salt = hex(crypto.getRandomValues(new Uint8Array(16)));
@@ -580,18 +582,20 @@ export async function onRequest(context) {
 
     const staffMatch = path.match(/^\/staff\/(\d+)$/);
     if (staffMatch && method === 'PUT') {
-      const denied = requireRole(user, 'admin');
+      const denied = requireRole(user, 'boss');
       if (denied) return denied;
       const id = parseInt(staffMatch[1]);
       if (id === user.id) return err('不能修改自己的帳號狀態');
       const target = await env.DB.prepare('SELECT id, role FROM users WHERE id = ?').bind(id).first();
       if (!target || target.role === 'member') return err('找不到帳號', 404);
       if (target.role === 'admin') return err('不能修改 admin 帳號');
+      if (user.role === 'boss' && target.role !== 'staff') return err('權限不足，老闆只能管理店員帳號', 403);
       const b = await request.json();
       if (b.active !== undefined) {
         await env.DB.prepare('UPDATE users SET active = ? WHERE id = ?').bind(b.active ? 1 : 0, id).run();
       }
       if (b.role && ['staff', 'boss'].includes(b.role)) {
+        if (user.role !== 'admin') return err('權限不足，只有超級管理員能調整角色', 403);
         await env.DB.prepare('UPDATE users SET role = ? WHERE id = ?').bind(b.role, id).run();
       }
       if (b.password) {
