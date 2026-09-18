@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.7.0">
+<link rel="stylesheet" href="/css/style.css?v=1.7.1">
 </head>
 <body>
 <header class="topbar">
@@ -252,6 +252,7 @@
         <button class="btn" id="nc-create" style="flex:1">建立會員</button>
         <button class="btn secondary" id="nc-cancel" style="flex:1">取消</button>
       </div>
+      <button class="btn danger-outline" id="nc-clear" style="width:100%;margin-top:8px">清除所有資料重新填入</button>
     </div>
   </div>
 
@@ -316,7 +317,7 @@
   <p class="app-version" id="app-version"></p>
 </div>
 
-<script src="/js/api.js?v=1.7.0"></script>
+<script src="/js/api.js?v=1.7.1"></script>
 <script>
 // 頁尾版本號：從發布時產生的 /version.txt 讀（來源是專案根目錄 VERSION）
 fetch('/version.txt', { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
@@ -351,7 +352,6 @@ document.getElementById('btn-pw').onclick = () => {
   pwModal.style.display = 'flex';
 };
 document.getElementById('pw-cancel').onclick = () => { pwModal.style.display = 'none'; };
-pwModal.addEventListener('click', e => { if (e.target === pwModal) pwModal.style.display = 'none'; });
 document.getElementById('pw-save').onclick = async () => {
   try {
     await API.post('/me/password', {
@@ -491,15 +491,19 @@ document.getElementById('mm-prev').onclick = () => { if (mmPage > 1) { mmPage--;
 document.getElementById('mm-next').onclick = () => { mmPage++; loadMembers(); };
 
 // ---- 新增會員（免註冊）----
-// 打錯字被擋下、或不小心點到背景關掉 Modal，都不會清空已經打好的欄位；
-// 只有真的建立成功才清空，準備給下一位會員用
+// 打錯字被擋下也不會清空已經打好的欄位，只有真的建立成功才清空，準備給下一位會員用；
+// 要重填就按「清除所有資料重新填入」，Modal 本身只有按「取消」才會關，點背景沒有用（防止手滑清空打到一半的資料）
 const ncModal = document.getElementById('nc-modal');
 document.getElementById('mm-open-new').onclick = () => {
   if (!document.getElementById('nc-date').value) document.getElementById('nc-date').value = nowTaipeiInput();
   ncModal.style.display = 'flex';
 };
 document.getElementById('nc-cancel').onclick = () => { ncModal.style.display = 'none'; };
-ncModal.addEventListener('click', e => { if (e.target === ncModal) ncModal.style.display = 'none'; });
+document.getElementById('nc-clear').onclick = () => {
+  if (!confirm('確定要清除目前打的所有欄位重新填嗎？')) return;
+  ['nc-name', 'nc-phone', 'nc-points', 'nc-birthday', 'nc-referrer', 'nc-remark'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('nc-date').value = nowTaipeiInput();
+};
 document.getElementById('nc-create').onclick = async () => {
   const name = document.getElementById('nc-name').value.trim();
   if (!name) return showMsg(msg, '請輸入姓名');
@@ -641,7 +645,6 @@ function openDelete(id, name) {
   delModal.style.display = 'flex';
 }
 document.getElementById('del-cancel').onclick = () => { delModal.style.display = 'none'; };
-delModal.addEventListener('click', e => { if (e.target === delModal) delModal.style.display = 'none'; });
 document.getElementById('del-ok').onclick = async () => {
   const okBtn = document.getElementById('del-ok');
   okBtn.disabled = true;
@@ -813,7 +816,6 @@ document.getElementById('r-reset-btn').onclick = () => {
   resetModal.style.display = 'flex';
 };
 document.getElementById('reset-cancel').onclick = () => { resetModal.style.display = 'none'; };
-resetModal.addEventListener('click', e => { if (e.target === resetModal) resetModal.style.display = 'none'; });
 document.getElementById('reset-ok').onclick = async () => {
   const pw = document.getElementById('reset-pw').value;
   if (!pw) return showMsg(msg, '請輸入密碼');
@@ -878,7 +880,6 @@ document.getElementById('st-open-modal').onclick = () => {
   stModal.style.display = 'flex';
 };
 document.getElementById('st-cancel').onclick = () => { stModal.style.display = 'none'; };
-stModal.addEventListener('click', e => { if (e.target === stModal) stModal.style.display = 'none'; });
 
 document.getElementById('st-create').onclick = async () => {
   try {
