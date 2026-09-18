@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>管理後台｜喜翻親子感統遊戲空間</title>
-<link rel="stylesheet" href="/css/style.css?v=1.10.0">
+<link rel="stylesheet" href="/css/style.css?v=1.10.1">
 </head>
 <body>
 <header class="topbar">
@@ -341,7 +341,7 @@
   <p class="app-version" id="app-version"></p>
 </div>
 
-<script src="/js/api.js?v=1.10.0"></script>
+<script src="/js/api.js?v=1.10.1"></script>
 <script>
 // 頁尾版本號：從發布時產生的 /version.txt 讀（來源是專案根目錄 VERSION）
 fetch('/version.txt', { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
@@ -468,7 +468,7 @@ async function loadMembers() {
     document.getElementById('mm-body').innerHTML = data.members.map(m => `
       <tr>
         <td class="sticky"><a class="xl-link" href="#member/${m.id}" title="${esc(m.name)}">${esc(m.name)}</a>${tierBadge(m.tier)}</td>
-        <td><button class="xl-remark" data-remark-id="${m.id}" data-remark-name="${esc(m.name)}" data-remark-value="${esc(m.remark || '')}">${m.remark ? esc(m.remark) : '<span class="muted">＋ 加備註</span>'}</button></td>
+        <td><button class="xl-remark" data-remark-id="${m.id}" data-remark-name="${esc(m.name)}" data-remark-value="${esc(m.remark || '')}">${m.remark ? esc(m.remark) : '<span class="muted">＋ 加入備註</span>'}</button></td>
         <td class="num"><b>${m.balance || 0}</b></td>
         <td class="num">${m.visit_count || 0} 次</td>
         <td>${m.last_visit ? fmtVisit(m.last_visit) : '<span class="muted">尚未消費</span>'}</td>
