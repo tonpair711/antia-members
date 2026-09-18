@@ -30,7 +30,7 @@ const API = {
 
   logout() {
     localStorage.clear();
-    location.href = '/index.html';
+    location.href = '/login.html';
   },
 
   // 依角色導向對應頁面
@@ -43,7 +43,7 @@ const API = {
   // 頁面守衛：未登入或角色不符就踢回登入頁
   guard(allowedRoles) {
     if (!this.token || !allowedRoles.includes(this.role)) {
-      location.href = '/index.html';
+      location.href = '/login.html';
       return false;
     }
     return true;

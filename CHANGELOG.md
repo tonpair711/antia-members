@@ -1,5 +1,12 @@
 # 更新紀錄
 
+## v2.0.0（2026-09-19）
+- **新增公開官網**：首頁、關於我們、課程與服務、感統知識庫（含 3 篇文章）、聯絡我們，掛在 xifun.tonpair.com 根目錄，架構比照 hunglun2026（SEO/AEO 全套：llms.txt／llms-full.txt／sitemap.xml／search-index.json／robots.txt）
+- **重大變更**：原本的會員登入/註冊頁從根目錄 `/` 搬到 `/login.html`（根目錄現在是官網首頁），登出與未登入導向已同步更新；舊的 `/` 書籤會看到新官網而不是登入頁
+- 新增聯絡表單（`/contact.html`），走 Cloudflare Turnstile + Google Apps Script 收件，跟官網其餘頁面共用同一個 `tonpair711/xifun` repo 部署
+- 官網圖片使用 Facebook 粉專的真實課程照片，不用 AI 生圖
+- **上線前還缺**：Cloudflare Pages 環境變數 `APPS_SCRIPT_URL`／`FORM_SHARED_SECRET`／`TURNSTILE_SECRET` 未設，聯絡表單目前送出會失敗；contact.html 裡的 Turnstile site key 還是預留位置 `TURNSTILE_SITE_KEY`，要等 Steve 建好 Turnstile widget 後換上真的 key
+
 ## v1.10.1（2026-09-19）
 - 會員列表沒填備註時顯示的字改成「＋ 加入備註」（原本是「＋ 加備註」）
 

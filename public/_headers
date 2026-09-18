@@ -1,0 +1,44 @@
+# Cloudflare Pages 自訂回應標頭
+# 語法：路徑一行（可用 * 萬用字元），底下縮排兩格寫標頭，路徑比對不含查詢字串。
+
+# ── 全站安全標頭 ──
+/*
+  Strict-Transport-Security: max-age=31536000
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: frame-ancestors 'self'
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+
+# ── 官網靜態資源快取 ──
+/assets/*
+  Cache-Control: public, max-age=2592000
+
+# CSS／JS 用 ?v= 帶版號，改檔案要升版號，換版號等於換網址，可安全長快取
+/assets/style.css
+  Cache-Control: public, max-age=31536000, immutable
+/assets/main.js
+  Cache-Control: public, max-age=31536000, immutable
+
+# 這幾支要跟著網站內容更新，不能長快取
+/search-index.json
+  Cache-Control: public, max-age=3600
+/sitemap.xml
+  Cache-Control: public, max-age=3600
+/llms.txt
+  Cache-Control: public, max-age=3600
+/llms-full.txt
+  Cache-Control: public, max-age=3600
+/robots.txt
+  Cache-Control: public, max-age=3600
+
+# ── 會員系統／後台頁面：不要被搜尋引擎收錄 ──
+/login.html
+  X-Robots-Tag: noindex, nofollow
+/admin.html
+  X-Robots-Tag: noindex, nofollow
+/staff.html
+  X-Robots-Tag: noindex, nofollow
+/member.html
+  X-Robots-Tag: noindex, nofollow
