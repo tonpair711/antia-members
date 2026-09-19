@@ -14,7 +14,7 @@
 <meta property="og:locale" content="zh_TW">
 <link rel="apple-touch-icon" href="/images/logo.jpg">
 <link rel="icon" href="/images/logo.jpg">
-<link rel="stylesheet" href="/assets/style.css?v=2.8.0">
+<link rel="stylesheet" href="/assets/style.css?v=2.9.0">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -49,10 +49,10 @@
     </a>
     <button class="nav-toggle" id="nav-toggle" aria-label="開啟選單">☰</button>
     <nav class="main-nav" id="main-nav">
+      <a href="/about.html">關於喜翻</a>
       <a href="/services.html">課程與服務</a>
       <a href="/events.html">課堂花絮</a>
       <a href="/knowledge.html">家長學堂</a>
-      <a href="/about.html">關於我們</a>
       <a href="/contact.html" class="cta">聯絡我們</a>
     </nav>
     <a class="login-btn" href="/login.html">會員登入</a>
@@ -71,16 +71,64 @@
     <p class="trust-chip"><a href="#cert">🏅 職能治療師設計與帶領，看證書</a></p>
     <p class="lp-scroll">↓ 向下滑動，開啟探索</p>
   </div>
-  <div class="wrap">
-    <a class="lp-card" href="/services.html">
-      <img src="/assets/images/gallery/ball-pool.jpg" alt="寶寶在喜翻的彩色球池裡開心玩耍" width="1108" height="1478" loading="eager">
-      <div class="lp-card-text">
-        <h2>課程與服務</h2>
-        <p>看看孩子們在喜翻怎麼玩</p>
-        <span class="btn primary">看課程內容 →</span>
+</section>
+
+<section class="tour" id="tour" aria-label="認識喜翻">
+  <div class="tour-track">
+    <div class="tour-sticky">
+      <div class="tour-stage">
+        <figure class="tour-slide is-active">
+          <span class="tour-bg" style="background-image:url(/assets/images/gallery/ball-pool.jpg)"></span>
+          <img class="tour-fg" src="/assets/images/gallery/ball-pool.jpg" alt="寶寶在喜翻的彩色球池裡開心玩耍" width="1108" height="1478" loading="eager">
+          <figcaption class="tour-cap">
+            <h2>關於喜翻</h2>
+            <p>認識喜翻的故事與理念</p>
+            <a class="btn primary" href="/about.html">前往頁面 →</a>
+          </figcaption>
+        </figure>
+        <figure class="tour-slide">
+          <span class="tour-bg" style="background-image:url(/assets/images/gallery/collage-play.jpg)"></span>
+          <img class="tour-fg" src="/assets/images/gallery/collage-play.jpg" alt="家長陪孩子一起玩教具" width="640" height="960" loading="lazy">
+          <figcaption class="tour-cap">
+            <h2>課程與服務</h2>
+            <p>看看每一堂遊戲課怎麼玩</p>
+            <a class="btn primary" href="/services.html">前往頁面 →</a>
+          </figcaption>
+        </figure>
+        <figure class="tour-slide">
+          <span class="tour-bg" style="background-image:url(/assets/images/gallery/collage-kids.jpg)"></span>
+          <img class="tour-fg" src="/assets/images/gallery/collage-kids.jpg" alt="孩子們在喜翻玩球池與遊戲" width="640" height="960" loading="lazy">
+          <figcaption class="tour-cap">
+            <h2>課堂花絮</h2>
+            <p>孩子們的遊戲時光</p>
+            <a class="btn primary" href="/events.html">前往頁面 →</a>
+          </figcaption>
+        </figure>
+        <figure class="tour-slide">
+          <span class="tour-bg" style="background-image:url(/assets/images/gallery/wood-beads.jpg)"></span>
+          <img class="tour-fg" src="/assets/images/gallery/wood-beads.jpg" alt="彩色小木棒插進木盒孔洞的精細動作小遊戲" width="640" height="960" loading="lazy">
+          <figcaption class="tour-cap">
+            <h2>家長學堂</h2>
+            <p>職能治療師寫給家長的感統與育兒知識</p>
+            <a class="btn primary" href="/knowledge.html">前往頁面 →</a>
+          </figcaption>
+        </figure>
+        <figure class="tour-slide">
+          <span class="tour-bg" style="background-image:url(/assets/images/gallery/space-collage.jpg)"></span>
+          <img class="tour-fg" src="/assets/images/gallery/space-collage.jpg" alt="喜翻鋪滿軟墊的遊戲空間與各種關卡" width="1044" height="1568" loading="lazy">
+          <figcaption class="tour-cap">
+            <h2>聯絡與交通</h2>
+            <p>預約詢問，也告訴你怎麼找到我們</p>
+            <a class="btn primary" href="/contact.html#where">前往頁面 →</a>
+          </figcaption>
+        </figure>
+        <div class="tour-dots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i><i></i></div>
       </div>
-    </a>
+    </div>
   </div>
+</section>
+
+<section class="lp-hero lp-chips-sec">
   <div class="wrap">
     <div class="lp-chips" role="list">
       <a role="listitem" href="/services.html"><strong>課程與服務</strong><span>遊戲課怎麼玩</span></a>
@@ -129,7 +177,7 @@
 
 <section class="reveal" style="background:var(--accent-light)">
   <div class="wrap lp-space">
-    <img src="/assets/images/gallery/storefront.jpg" alt="喜翻親子感統遊戲空間店面外觀" loading="lazy" width="960" height="720">
+    <div class="map-wrap"><iframe src="https://www.google.com/maps?q=%E5%8F%B0%E5%8D%97%E5%B8%82%E6%96%B0%E7%87%9F%E5%8D%80%E5%91%A8%E6%AD%A6%E8%A1%97295%E5%B7%B717%E8%99%9F&output=embed" title="喜翻親子感統遊戲空間 Google 地圖" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
     <div>
       <p class="lp-kicker left">遊戲空間</p>
       <h2>喜翻是這樣的空間</h2>
@@ -209,10 +257,10 @@
     </div>
     <div>
       <h4>網站導覽</h4>
+      <a href="/about.html">關於喜翻</a>
       <a href="/services.html">課程與服務</a>
       <a href="/events.html">課堂花絮</a>
       <a href="/knowledge.html">家長學堂</a>
-      <a href="/about.html">關於我們</a>
       <a href="/contact.html">聯絡我們</a>
     </div>
     <div>
@@ -229,6 +277,6 @@
   </div>
 </footer>
 
-<script src="/assets/main.js?v=2.8.0"></script>
+<script src="/assets/main.js?v=2.9.0"></script>
 </body>
 </html>

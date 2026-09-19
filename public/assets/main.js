@@ -104,6 +104,75 @@ document.addEventListener('DOMContentLoaded', () => {
     reveals.forEach((el) => el.classList.add('in'));
   }
 
+  // 捲動導覽：固定一張大卡片，往下捲時照片慢慢變淡、交叉換成下一個主題（仿鴻綸首頁）。
+  // 沒有 JS、或系統設定「減少動態」時不啟用，退回一張張直排的卡片。
+  (function initTour() {
+    const track = document.querySelector('.tour');
+    if (!track || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+    const slides = Array.from(track.querySelectorAll('.tour-slide'));
+    const dots = Array.from(track.querySelectorAll('.tour-dots i'));
+    const n = slides.length;
+    if (n < 2) return;
+    const hdr = document.querySelector('header.site-header');
+    track.classList.add('tour-live');
+    track.style.setProperty('--n', n);
+    let ticking = false;
+    function update() {
+      ticking = false;
+      const hdrH = hdr ? hdr.offsetHeight : 0;
+      track.style.setProperty('--hdr', hdrH + 'px');
+      const r = track.getBoundingClientRect();
+      const total = Math.max(1, r.height - (window.innerHeight - hdrH));
+      const p = Math.min(1, Math.max(0, (hdrH - r.top) / total));
+      const t = p * (n - 1);
+      const k = Math.min(n - 2, Math.floor(t));
+      const f = t - k;
+      slides.forEach((s, i) => {
+        let o = 0;
+        if (i === k) o = f < 0.35 ? 1 : Math.max(0, 1 - (f - 0.35) / 0.3);
+        else if (i === k + 1) o = f < 0.35 ? 0 : Math.min(1, (f - 0.35) / 0.3);
+        s.style.opacity = o.toFixed(3);
+        const cap = s.querySelector('.tour-cap');
+        if (cap) cap.style.transform = 'translateY(' + ((1 - o) * 16).toFixed(1) + 'px)';
+        const fg = s.querySelector('.tour-fg');
+        if (fg) fg.style.transform = 'scale(' + (1 + (1 - o) * 0.05).toFixed(3) + ')';
+        s.classList.toggle('is-active', o > 0.5);
+      });
+      const cur = Math.round(t);
+      dots.forEach((d, i) => d.classList.toggle('on', i === cur));
+    }
+    function req() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+    window.addEventListener('scroll', req, { passive: true });
+    window.addEventListener('resize', req);
+    window.addEventListener('load', req);
+    update();
+  })();
+
+  // 累計瀏覽人次計數器：每個瀏覽器一天只送一次 POST（伺服器端也會再擋一次），其餘只讀數字。
+  // 顯示在頁尾最下面；讀不到就整個不顯示，不影響頁面。
+  (function visitCounter() {
+    const fb = document.querySelector('.footer-bottom');
+    if (!fb || !window.fetch) return;
+    const today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+    let last = '';
+    try { last = localStorage.getItem('xf_visit') || ''; } catch (e) { /* 無痕模式等讀不到就當沒有 */ }
+    const method = last === today ? 'GET' : 'POST';
+    fetch('/api/visit', { method, cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d || typeof d.total !== 'number') return;
+        if (method === 'POST') { try { localStorage.setItem('xf_visit', today); } catch (e) { /* ignore */ } }
+        const el = document.createElement('div');
+        el.className = 'visit-counter';
+        el.append('累計瀏覽 ');
+        const b = document.createElement('strong');
+        b.textContent = d.total.toLocaleString('en-US');
+        el.append(b, ' 人次');
+        fb.prepend(el);
+      })
+      .catch(() => {});
+  })();
+
   tidyBreaks();
 
   const form = document.getElementById('contact-form');

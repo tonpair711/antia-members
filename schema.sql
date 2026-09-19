@@ -57,3 +57,8 @@ INSERT INTO users (account, password_hash, salt, name, role) VALUES
    '7c251fd728cf8083b4c3408dbf3f0560791ad701fb3b48606e86e7aa16393ce0',
    'e1de89e81d68dce48e94d504c54b7537',
    '系統管理員', 'admin');
+
+-- 2026-09-19 官網瀏覽人次計數器（同 migrations/2026-09-19-site-visits.sql）
+CREATE TABLE IF NOT EXISTS site_visits (id INTEGER PRIMARY KEY CHECK (id = 1), total INTEGER NOT NULL DEFAULT 0);
+INSERT OR IGNORE INTO site_visits (id, total) VALUES (1, 0);
+CREATE TABLE IF NOT EXISTS visit_seen (h TEXT PRIMARY KEY, d TEXT NOT NULL);
