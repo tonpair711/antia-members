@@ -209,3 +209,6 @@ p, li { text-wrap: pretty; }
 .event h3 { margin: 2px 0 6px; font-size: 1.05rem; }
 .event p { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.65; }
 @media (max-width: 400px) { .event { flex-direction: column; align-items: stretch; } .event img { width: 100%; height: 200px; } }
+
+/* 斷行整理用：數字加單位、段落最後幾個字不拆開（由 main.js 加上） */
+.nb { white-space: nowrap; }
