@@ -51,7 +51,16 @@ nav.main-nav a:hover, nav.main-nav a.active { background: var(--primary-light); 
 nav.main-nav a.cta { background: var(--primary); color: #fff; }
 nav.main-nav a.cta:hover { background: var(--primary-dark); }
 .nav-toggle { display: none; }
+/* 常駐登入鈕：桌機在選單右側，手機在漢堡鈕左邊，永遠看得到 */
+.login-btn {
+  margin-left: 8px; padding: 8px 18px; border-radius: 999px; text-decoration: none;
+  background: var(--ink); color: #fff; font-size: .92rem; font-weight: 700; white-space: nowrap;
+  min-height: 40px; display: inline-flex; align-items: center;
+}
+.login-btn:hover { background: #000; color: #fff; }
 @media (max-width: 720px) {
+  .login-btn { order: 1; margin-left: auto; padding: 8px 16px; }
+  .nav-toggle { order: 2; }
   nav.main-nav { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; background: var(--card); padding: 10px; border-bottom: 1px solid var(--border); box-shadow: 0 8px 16px rgba(0,0,0,.06); }
   nav.main-nav.open { display: flex; }
   nav.main-nav a { padding: 12px 14px; }
@@ -164,4 +173,28 @@ footer.site-footer a:hover { color: var(--primary-dark); }
 .notice-inner a {
   color: #fff; font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
   min-height: 32px; display: inline-flex; align-items: center;
+}
+
+/* ── 排版精修（v2.2.2）：標題行距、避免孤字、手機卡片兩欄、頁首不折行 ── */
+h1, h2, h3 { line-height: 1.4; text-wrap: balance; }
+p, li { text-wrap: pretty; }
+.hero-text h1 { line-height: 1.35; }
+.brand-link { min-width: 0; }
+.brand-link span { white-space: nowrap; }
+@media (max-width: 600px) {
+  .hero { padding: 28px 0 20px; }
+  .hero .wrap { gap: 22px; }
+  .hero-text h1 { font-size: 1.9rem; }
+  .hero-text p { font-size: 1rem; }
+  .btn-row .btn { flex: 1 1 140px; text-align: center; }
+  .card-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .card-grid > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .card { padding: 16px; }
+  .card p { font-size: .86rem; line-height: 1.65; }
+  section h2 { font-size: 1.35rem; }
+}
+@media (max-width: 400px) {
+  .brand-link span { font-size: .88rem; }
+  .brand-link { gap: 8px; }
+  .login-btn { padding: 8px 14px; }
 }
