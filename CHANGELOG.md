@@ -1,5 +1,10 @@
 # 更新紀錄
 
+## v2.0.2（2026-09-19）
+- 官網補上正式地址（台南市新營區周武街295巷17號）與電話 0958-978-122：頁尾、聯絡頁卡片、JSON-LD 結構化資料、llms.txt／llms-full.txt
+- 移除先前沒有依據的「近新營交流道」說法，改寫實際地標（7-ELEVEN 金武門市、家樂福、正典咖啡）
+- Halloween 合照經 Steve 確認可公開
+
 ## v2.0.1（2026-09-19）
 - 聯絡表單上線：Apps Script 已部署、Turnstile widget 已建好並換上真的 site key，Pages 環境變數 `APPS_SCRIPT_URL`／`FORM_SHARED_SECRET`／`TURNSTILE_SECRET` 已設定（v2.0.0 的「上線前還缺」項目全部補齊）
 
