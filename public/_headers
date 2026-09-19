@@ -12,8 +12,9 @@
   Cross-Origin-Opener-Policy: same-origin
 
 # ── 官網靜態資源快取 ──
-/assets/*
-  Cache-Control: public, max-age=2592000
+# 圖片：改檔案時要換檔名（2026-09-19 證書個資事件：同檔名被邊緣快取舊版，舊圖還在對外提供）
+/assets/images/*
+  Cache-Control: public, max-age=3600, must-revalidate
 
 # CSS／JS 用 ?v= 帶版號，改檔案要升版號，換版號等於換網址，可安全長快取
 /assets/style.css
