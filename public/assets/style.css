@@ -152,3 +152,16 @@ footer.site-footer a:hover { color: var(--primary-dark); }
   .nav-row { padding: 10px 16px; }
   section { padding: 28px 0; }
 }
+
+/* ── 近日課程公告列（內容來自 /schedule.json）── */
+.notice-bar { background: var(--primary); color: #fff; font-size: .9rem; }
+.notice-inner {
+  max-width: var(--max-width); margin: 0 auto; padding: 8px 20px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;
+}
+.notice-inner strong { background: #fff; color: var(--primary-dark); border-radius: 999px; padding: 0 10px; font-size: .82rem; }
+.notice-inner span { flex: 1 1 220px; line-height: 1.5; }
+.notice-inner a {
+  color: #fff; font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+  min-height: 32px; display: inline-flex; align-items: center;
+}

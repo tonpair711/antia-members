@@ -1,5 +1,34 @@
 // 喜翻官網共用小工具：手機版導覽選單開關 + 聯絡表單送出
 document.addEventListener('DOMContentLoaded', () => {
+  // 近日課程公告列：內容在 /schedule.json，改那一個檔全站同步。讀不到就不顯示，不影響頁面
+  const siteHeader = document.querySelector('header.site-header');
+  if (siteHeader) {
+    fetch('/schedule.json', { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d || !d.text) return;
+        const bar = document.createElement('div');
+        bar.className = 'notice-bar';
+        const inner = document.createElement('div');
+        inner.className = 'notice-inner';
+        const tag = document.createElement('strong');
+        tag.textContent = d.label || '近日課程';
+        const txt = document.createElement('span');
+        txt.textContent = d.text;
+        inner.append(tag, txt);
+        (Array.isArray(d.links) ? d.links : []).forEach((l) => {
+          if (!l || !l.text || typeof l.href !== 'string' || !l.href.startsWith('/')) return;
+          const a = document.createElement('a');
+          a.href = l.href;
+          a.textContent = l.text;
+          inner.append(a);
+        });
+        bar.append(inner);
+        siteHeader.prepend(bar);
+      })
+      .catch(() => {});
+  }
+
   const toggle = document.getElementById('nav-toggle');
   const nav = document.getElementById('main-nav');
   if (toggle && nav) {
