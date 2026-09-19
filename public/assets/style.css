@@ -319,3 +319,12 @@ footer.site-footer .f-brand p { color: var(--muted); font-size: .88rem; margin: 
 /* 累計瀏覽人次 */
 .visit-counter { margin: 0 0 8px; font-size: .85rem; color: var(--muted); }
 .visit-counter strong { color: var(--primary-dark); font-size: 1rem; letter-spacing: .04em; }
+
+/* ── 數字橫幅（仿鴻綸 statBanner）── */
+.stat-banner { position: relative; overflow: hidden; color: #fff; padding: 72px 0; text-align: center; background: #3a3230; }
+.stat-bg { position: absolute; inset: -10%; background-size: cover; background-position: center; filter: brightness(.42) saturate(1.1); transform: scale(1.08); will-change: transform; }
+.stat-banner .wrap { position: relative; z-index: 1; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 28px 20px; margin-top: 18px; }
+.stat-num { font-size: clamp(2.2rem, 6vw, 3.6rem); font-weight: 800; line-height: 1.15; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.stat-label { margin-top: 6px; font-size: .95rem; opacity: .9; letter-spacing: .06em; }
+@media (max-width: 600px) { .stat-banner { padding: 52px 0; } .stat-grid { grid-template-columns: repeat(2, 1fr); } }

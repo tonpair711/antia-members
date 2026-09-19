@@ -104,8 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
     reveals.forEach((el) => el.classList.add('in'));
   }
 
-  // 捲動導覽：固定一張大卡片，往下捲時照片慢慢變淡、交叉換成下一個主題（仿鴻綸首頁）。
-  // 沒有 JS、或系統設定「減少動態」時不啟用，退回一張張直排的卡片。
+  // 捲動導覽（仿鴻綸首頁 landing.js 的 tourZoom）：固定一張大卡片，往下捲時各主題的照片連續交叉淡入淡出，
+  // 文字跟著上下位移；opacity = 1 - 1.3 * |i - 進度|。沒有 JS、或系統設定「減少動態」時退回直排卡片。
   (function initTour() {
     const track = document.querySelector('.tour');
     if (!track || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
@@ -114,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const n = slides.length;
     if (n < 2) return;
     const hdr = document.querySelector('header.site-header');
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
     track.classList.add('tour-live');
     track.style.setProperty('--n', n);
     let ticking = false;
@@ -123,29 +124,88 @@ document.addEventListener('DOMContentLoaded', () => {
       track.style.setProperty('--hdr', hdrH + 'px');
       const r = track.getBoundingClientRect();
       const total = Math.max(1, r.height - (window.innerHeight - hdrH));
-      const p = Math.min(1, Math.max(0, (hdrH - r.top) / total));
-      const t = p * (n - 1);
-      const k = Math.min(n - 2, Math.floor(t));
-      const f = t - k;
+      const p = clamp((hdrH - r.top) / total, 0, 1);
+      const cont = p * (n - 1);
+      const idx = Math.min(n - 1, Math.round(cont));
       slides.forEach((s, i) => {
-        let o = 0;
-        if (i === k) o = f < 0.35 ? 1 : Math.max(0, 1 - (f - 0.35) / 0.3);
-        else if (i === k + 1) o = f < 0.35 ? 0 : Math.min(1, (f - 0.35) / 0.3);
+        const off = i - cont;
+        const o = clamp(1 - 1.3 * Math.abs(off), 0, 1);
         s.style.opacity = o.toFixed(3);
+        s.style.zIndex = off >= 0 ? String(10 - Math.ceil(off)) : '20';
+        s.classList.toggle('is-active', o > 0.85);
         const cap = s.querySelector('.tour-cap');
-        if (cap) cap.style.transform = 'translateY(' + ((1 - o) * 16).toFixed(1) + 'px)';
+        if (cap) {
+          cap.style.transform = 'translateY(' + (8 * off).toFixed(2) + 'vh)';
+          cap.style.opacity = clamp(1 - 1.7 * Math.abs(off), 0, 1).toFixed(3);
+        }
         const fg = s.querySelector('.tour-fg');
-        if (fg) fg.style.transform = 'scale(' + (1 + (1 - o) * 0.05).toFixed(3) + ')';
-        s.classList.toggle('is-active', o > 0.5);
+        if (fg) fg.style.transform = 'scale(' + (1 + Math.abs(off) * 0.08).toFixed(3) + ')';
       });
-      const cur = Math.round(t);
-      dots.forEach((d, i) => d.classList.toggle('on', i === cur));
+      dots.forEach((d, i) => d.classList.toggle('on', i === idx));
     }
     function req() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
     window.addEventListener('scroll', req, { passive: true });
     window.addEventListener('resize', req);
     window.addEventListener('load', req);
     update();
+  })();
+
+  // 數字橫幅（仿鴻綸 statBanner）：背景視差＋進入畫面時數字從 0 跳到實際值。
+  // 「累計瀏覽人次」來自 /api/visit 的真實數字，讀不到就把這一格拿掉，不顯示假數字。
+  (function initStats() {
+    const banner = document.querySelector('.stat-banner');
+    if (!banner) return;
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const bg = banner.querySelector('.stat-bg');
+    const nums = Array.from(banner.querySelectorAll('.stat-num'));
+    const fmt = (v, dec) => (dec ? v.toFixed(dec) : Math.round(v).toLocaleString('en-US'));
+    function setFinal(el) { el.textContent = fmt(parseFloat(el.dataset.target), parseInt(el.dataset.decimals || '0', 10)); }
+    function countUp(el) {
+      const target = parseFloat(el.dataset.target);
+      const dec = parseInt(el.dataset.decimals || '0', 10);
+      if (!isFinite(target)) return;
+      if (reduce) { setFinal(el); return; }
+      const t0 = performance.now();
+      const dur = 1400;
+      // 用計時器而不是 rAF：分頁在背景或畫面被節流時 rAF 幾乎不跑，數字會卡在中間；計時器一定會走到最終值
+      const iv = setInterval(() => {
+        const t = Math.min(1, Math.max(0, (performance.now() - t0) / dur));
+        el.textContent = fmt(target * (1 - Math.pow(1 - t, 3)), dec);
+        if (t >= 1) clearInterval(iv);
+      }, 30);
+    }
+    const visitEl = banner.querySelector('[data-visit]');
+    const ready = visitEl && window.fetch
+      ? fetch('/api/visit', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((d) => {
+          if (d && typeof d.total === 'number') visitEl.dataset.target = String(d.total);
+          else visitEl.closest('.stat-item').remove();
+        }).catch(() => { visitEl.closest('.stat-item').remove(); })
+      : Promise.resolve();
+    let played = false;
+    function play() {
+      if (played) return;
+      played = true;
+      ready.then(() => banner.querySelectorAll('.stat-num').forEach(countUp));
+    }
+    nums.forEach((el) => { if (!el.hasAttribute('data-visit')) el.textContent = fmt(0, parseInt(el.dataset.decimals || '0', 10)); });
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { play(); io.disconnect(); } }), { threshold: 0.35 });
+      io.observe(banner);
+    } else { play(); }
+    if (!reduce && bg) {
+      let tk = false;
+      const upd = () => {
+        tk = false;
+        const r = banner.getBoundingClientRect();
+        const vh = window.innerHeight;
+        if (r.bottom > 0 && r.top < vh) {
+          const off = (r.top + r.height / 2 - vh / 2) / vh;
+          bg.style.transform = 'translateY(' + (60 * off).toFixed(1) + 'px) scale(1.08)';
+        }
+      };
+      window.addEventListener('scroll', () => { if (!tk) { tk = true; requestAnimationFrame(upd); } }, { passive: true });
+      upd();
+    }
   })();
 
   // 累計瀏覽人次計數器：每個瀏覽器一天只送一次 POST（伺服器端也會再擋一次），其餘只讀數字。
