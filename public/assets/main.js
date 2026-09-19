@@ -50,6 +50,8 @@ document.addEventListener('DOMContentLoaded', () => {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!d || !d.text) return;
+        // until（YYYY-MM-DD，台灣日期）過了就不顯示，避免過期公告掛在網站上
+        if (d.until && new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10) > d.until) return;
         const bar = document.createElement('div');
         bar.className = 'notice-bar';
         const inner = document.createElement('div');
