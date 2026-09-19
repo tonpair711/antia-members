@@ -219,3 +219,70 @@ p, li { text-wrap: pretty; }
 .loc-grid img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
 .loc-grid figcaption { padding: 10px 14px; font-size: .88rem; color: var(--muted); line-height: 1.6; }
 @media (max-width: 600px) { .loc-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } .loc-grid figcaption { padding: 8px 10px; font-size: .82rem; } }
+
+/* ── 專業把關（首頁證書區）與主視覺徽章 ── */
+.trust-chip { margin: 14px 0 0; }
+.trust-chip a { display: inline-flex; align-items: center; min-height: 40px; padding: 6px 16px; border-radius: 999px; background: var(--accent-light); color: #2f7a4d; font-weight: 700; font-size: .92rem; text-decoration: none; border: 1px solid #cfe8dc; }
+.cert-section { background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.cert-wrap { display: flex; flex-wrap: wrap; gap: 28px; align-items: center; justify-content: center; }
+.cert-img { flex: 0 1 300px; display: block; }
+.cert-img img { width: 100%; height: auto; border-radius: var(--radius-sm); border: 1px solid var(--border); box-shadow: 0 10px 28px rgba(0,0,0,.12); }
+.cert-text { flex: 1 1 320px; max-width: 560px; }
+.cert-kicker { margin: 0 0 4px; color: var(--accent); font-weight: 800; font-size: .85rem; letter-spacing: .08em; }
+.cert-text h2 { text-align: left; margin: 0 0 12px; }
+.cert-note { color: var(--muted); font-size: .88rem; }
+@media (max-width: 600px) { .cert-img { flex-basis: 220px; margin: 0 auto; } .cert-text { text-align: left; } }
+
+/* ══ Landing page 風格（v2.8.0，參考鴻綸官網的首頁語言）══ */
+.lp-kicker { text-align: center; letter-spacing: .3em; font-size: .82rem; color: var(--muted); margin: 0 0 10px; font-weight: 700; }
+.lp-kicker.left { text-align: left; }
+.lp-hero { background: linear-gradient(180deg, #fff 0%, var(--bg) 100%); padding: 56px 0 28px; text-align: center; }
+.lp-title { font-size: clamp(2.1rem, 6.4vw, 3.8rem); font-weight: 500; line-height: 1.3; margin: 8px 0 18px; color: var(--ink); letter-spacing: .02em; text-wrap: balance; }
+.lp-title .hl { background: linear-gradient(90deg, var(--primary), #f0a35e); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; font-weight: 700; }
+.lp-sub { max-width: 640px; margin: 0 auto 24px; color: var(--muted); font-size: 1.05rem; }
+.lp-cta { justify-content: center; }
+.lp-hero .trust-chip { margin: 18px 0 0; }
+.lp-scroll { margin: 36px 0 28px; font-size: .9rem; font-weight: 700; letter-spacing: .06em; color: var(--ink); animation: lpBob 2.4s ease-in-out infinite; }
+@keyframes lpBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+.lp-card { position: relative; display: block; border-radius: 28px; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,.16); text-decoration: none; aspect-ratio: 16 / 9; background: #eee; }
+.lp-card img { width: 100%; height: 100%; object-fit: cover; object-position: center 38%; }
+.lp-card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,.62) 100%); }
+.lp-card-text { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; padding: 28px 32px; text-align: left; color: #fff; }
+.lp-card-text h2 { color: #fff; text-align: left; margin: 0 0 4px; font-size: clamp(1.5rem, 4vw, 2.2rem); }
+.lp-card-text p { margin: 0 0 14px; opacity: .92; }
+.lp-chips { display: flex; gap: 12px; overflow-x: auto; padding: 22px 2px 8px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.lp-chips a { flex: 0 0 auto; min-width: 170px; scroll-snap-align: start; text-decoration: none; background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 12px 16px; text-align: left; box-shadow: 0 2px 10px rgba(0,0,0,.04); }
+.lp-chips strong { display: block; color: var(--ink); font-size: .95rem; }
+.lp-chips span { display: block; color: var(--muted); font-size: .8rem; }
+.lp-space { display: flex; flex-wrap: wrap; gap: 32px; align-items: center; }
+.lp-space img { flex: 1 1 320px; max-width: 520px; width: 100%; border-radius: 22px; object-fit: cover; aspect-ratio: 4 / 3; box-shadow: 0 14px 40px rgba(0,0,0,.12); }
+.lp-space > div { flex: 1 1 320px; }
+.lp-space h2 { text-align: left; }
+.lp-end { text-align: center; background: var(--primary-light); }
+section.reveal { padding: 64px 0; }
+@media (max-width: 600px) {
+  .lp-hero { padding: 36px 0 20px; }
+  .lp-card { aspect-ratio: 4 / 5; border-radius: 22px; }
+  .lp-card-text { padding: 20px; }
+  section.reveal { padding: 44px 0; }
+}
+/* 捲動浮現（沒有 JS 或減少動態時一律直接顯示）*/
+.js .reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s ease, transform .7s ease; }
+.js .reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .js .reveal { opacity: 1; transform: none; transition: none; } .lp-scroll { animation: none; } }
+
+/* 右下角固定「線上諮詢」圖示條 */
+.fab-contact { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 60; display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--border); border-radius: 999px; padding: 6px 8px 6px 16px; box-shadow: 0 8px 28px rgba(0,0,0,.16); }
+.fab-contact > span { font-weight: 800; font-size: .85rem; color: var(--ink); white-space: nowrap; }
+.fab-contact a { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; margin: 0; }
+.fab-contact svg { width: 20px; height: 20px; }
+@media (max-width: 600px) { .fab-contact > span { display: none; } .fab-contact { padding: 6px; gap: 6px; } .fab-contact a { width: 38px; height: 38px; } }
+
+/* 三欄頁尾 */
+footer.site-footer .wrap.footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1.5fr; gap: 32px; align-items: start; }
+footer.site-footer .f-logo { display: flex; align-items: center; gap: 10px; color: var(--ink); font-weight: 800; font-size: 1rem; margin-bottom: 8px; }
+footer.site-footer .f-logo img { border-radius: 50%; }
+footer.site-footer .f-brand p { color: var(--muted); font-size: .88rem; margin: 0 0 8px; max-width: 320px; }
+@media (max-width: 720px) { footer.site-footer .wrap.footer-grid { grid-template-columns: 1fr; gap: 22px; } }
+
+.lp-title .hl { white-space: nowrap; }

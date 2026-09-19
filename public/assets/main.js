@@ -79,6 +79,31 @@ document.addEventListener('DOMContentLoaded', () => {
     toggle.addEventListener('click', () => nav.classList.toggle('open'));
   }
 
+  // 右下角固定「線上諮詢」圖示條（Facebook／Instagram／電話／地圖），全站都有；內容都是固定的靜態字串
+  if (!document.querySelector('.fab-contact')) {
+    const map = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('台南市新營區周武街295巷17號');
+    const fab = document.createElement('div');
+    fab.className = 'fab-contact';
+    fab.innerHTML = '<span>線上諮詢</span>'
+      + '<a href="https://www.facebook.com/Loverolling0808/" target="_blank" rel="noopener" aria-label="Facebook 粉專" style="background:#1877f2"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.78-3.89 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12"/></svg></a>'
+      + '<a href="https://www.instagram.com/loverolling123/" target="_blank" rel="noopener" aria-label="Instagram" style="background:linear-gradient(45deg,#f9a03f,#e1306c,#833ab4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>'
+      + '<a href="tel:0958978122" aria-label="撥打電話 0958-978-122" style="background:#2f9e63"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></a>'
+      + '<a href="' + map + '" target="_blank" rel="noopener" aria-label="Google 地圖導航" style="background:#ea4335"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg></a>';
+    document.body.appendChild(fab);
+  }
+
+  // 捲動到才浮現（landing page 風格）。沒有 IntersectionObserver 就直接全部顯示
+  document.documentElement.classList.add('js');
+  const reveals = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((es) => es.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    }), { threshold: 0.1 });
+    reveals.forEach((el) => io.observe(el));
+  } else {
+    reveals.forEach((el) => el.classList.add('in'));
+  }
+
   tidyBreaks();
 
   const form = document.getElementById('contact-form');
