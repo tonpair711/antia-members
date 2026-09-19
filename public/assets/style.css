@@ -194,7 +194,18 @@ p, li { text-wrap: pretty; }
   section h2 { font-size: 1.35rem; }
 }
 @media (max-width: 400px) {
-  .brand-link span { font-size: .88rem; }
-  .brand-link { gap: 8px; }
-  .login-btn { padding: 8px 14px; }
+  .brand-link span { font-size: .8rem; }
+  .brand-link { gap: 6px; }
+  .brand-link img { width: 34px; height: 34px; }
+  .login-btn { padding: 8px 12px; font-size: .85rem; }
+  .nav-toggle { padding: 4px 4px; }
 }
+
+/* ── 活動剪影 ── */
+.event-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.event { display: flex; gap: 16px; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; box-shadow: 0 2px 10px rgba(0,0,0,.03); }
+.event img { width: 120px; height: 120px; flex: none; border-radius: var(--radius-sm); object-fit: cover; }
+.event .cat { font-size: .78rem; color: var(--accent); font-weight: 700; }
+.event h3 { margin: 2px 0 6px; font-size: 1.05rem; }
+.event p { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.65; }
+@media (max-width: 400px) { .event { flex-direction: column; align-items: stretch; } .event img { width: 100%; height: 200px; } }
