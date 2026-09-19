@@ -1,5 +1,8 @@
 # 更新紀錄
 
+## v2.0.1（2026-09-19）
+- 聯絡表單上線：Apps Script 已部署、Turnstile widget 已建好並換上真的 site key，Pages 環境變數 `APPS_SCRIPT_URL`／`FORM_SHARED_SECRET`／`TURNSTILE_SECRET` 已設定（v2.0.0 的「上線前還缺」項目全部補齊）
+
 ## v2.0.0（2026-09-19）
 - **新增公開官網**：首頁、關於我們、課程與服務、感統知識庫（含 3 篇文章）、聯絡我們，掛在 xifun.tonpair.com 根目錄，架構比照 hunglun2026（SEO/AEO 全套：llms.txt／llms-full.txt／sitemap.xml／search-index.json／robots.txt）
 - **重大變更**：原本的會員登入/註冊頁從根目錄 `/` 搬到 `/login.html`（根目錄現在是官網首頁），登出與未登入導向已同步更新；舊的 `/` 書籤會看到新官網而不是登入頁
